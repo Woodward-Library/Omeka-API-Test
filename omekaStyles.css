@@ -1,0 +1,67 @@
+.singleResult{
+    display:flex;
+  }
+  
+  .resultImage{
+    float:left;
+    padding:20px;
+  }
+  
+  .resultImage img{
+    max-width: fit-content;
+  }
+  
+  .resultInfo p{
+    padding:10px;
+  }
+  
+  #pagination {
+    text-align : center;
+  }
+  
+  p.itemType {
+      font-size: 11px;
+      padding-top: 5px;
+      padding-bottom: 0px;
+    line-height: 14px;
+  }
+  
+  .searchOmeka {
+      
+      display: flex;
+      justify-content: center;
+      padding: 5px;
+  }
+  
+  input#searchInput {
+      height: 25px;
+  }
+  
+  button#submitSearch {
+      height: 32px;
+      margin-left: 5px;
+      margin-top:0px;
+  }
+
+div#collectionToggle {
+    display: flex;
+    justify-content: center;
+}
+
+div#toggleItem {
+    padding: 10px;
+}
+
+div#toggleItem:hover {
+    background-color: aliceblue;
+    cursor: pointer;
+}
+
+a#pageNumber:hover {
+  background-color: aliceblue;
+  cursor: pointer;
+}
+
+.resultInfo>h2 {
+    padding-top:0px;
+}
