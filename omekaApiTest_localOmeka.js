@@ -15,15 +15,15 @@
  * 
  ********************************************************************/
 
-startingItemSetID="534"; //set starting Item Set ID to display on load if none given
+startingItemSetID="1"; //set starting Item Set ID to display on load if none given
 
 /* get url params - maybe this should be a function */
 urlparams = new URL(window.location.toLocaleString());
 itemSetID = urlparams.searchParams.get('itemSetID');
 
 
-base_url="https://omeka-dev.library.ubc.ca/api/items?item_set_id="; //the Omeka Base API URL + item set id holder
-search_url="https://omeka-dev.library.ubc.ca/api/items?search=" //the Omeka Search API URL string - needed for any Search requests
+base_url="http://localhost:8888/omeka-s/api/items?item_set_id="; //the Omeka Base API URL + item set id holder
+search_url="http://localhost:8888/omeka-s/api/items?search=" //the Omeka Search API URL string - needed for any Search requests
 itemPlayerURL="https://ask-library-dev.sites.olt.ubc.ca/omeka-embed-tests/?itemID=";  //URL to where an instance of Mirador player is located, pass Item/ItemSet ID with URL params - open collection items there?
 
 
@@ -62,11 +62,9 @@ function kickOff() {
 
 
 //gets the data from Omeka and send it to printResults
-//this function needs an Error check!
 async function getData(givenItemSetID, wasSearch, pageNumber){
 
     //checking to see if getData was run by Search to use appropriate API url, if not get item set results from base_url
-    //idea - separate this if into another function - buildAPIURL - need to build urls
     console.log(wasSearch);
     if (wasSearch){
       input = document.getElementById("searchInput").value;
@@ -74,7 +72,7 @@ async function getData(givenItemSetID, wasSearch, pageNumber){
       console.log(builtApiURL);
     }
     else {
-      builtApiURL = base_url+givenItemSetID+perPageURL+pageURL;
+      builtApiURL = base_url+givenItemSetID+perPageURL+pageURL+pageNumber;
       console.log(builtApiURL);
     }
 
@@ -83,8 +81,8 @@ async function getData(givenItemSetID, wasSearch, pageNumber){
       .then(response => {
         console.log(...response.headers);  //arg the custom response headers are blocked by CORS - need to add special allowances in .htaccess...
         
-        getHeaderTotalResults = response.headers.get('omeka-s-total-results'); //just a test to see if we can grab a header value
-        console.log (getHeaderTotalResults);  
+        testHeaderGet = response.headers.get('omeka-s-total-results'); //just a test to see if we can grab a header value
+        console.log (testHeaderGet);  
 
         return response.json();
       })
@@ -94,9 +92,11 @@ async function getData(givenItemSetID, wasSearch, pageNumber){
   
     dataBack = response;
     console.log(dataBack); //just to check the data 
-    itemCount = getHeaderTotalResults; //set this to total results found in header
+    itemCount=dataBack.length;
+    console.log(itemCount);
+    console.log(wasSearch);
     printResults(dataBack);  
-    printPagination(itemCount,builtApiURL);
+    printPagination(itemCount,wasSearch);
 }
 
 //some results returned via the api are contained in arrays - this is a helper to create objects from the arrays so we can reference them in printResults
@@ -193,6 +193,8 @@ function printResults(dataBack){
       //check if the particular item has attached media
       checkHasMedia(itemMedia);
   }
+  //insert pagination function here ?
+  //printPagination(numberOfResults,numberOfPages);
 }
 
 //need a function to get the Next Page data and attach it as link to page number pagination 
@@ -219,15 +221,14 @@ function checkHasMedia (itemMediaArray){
 
 }
 
-function printPagination(numberOfResults, builtURL){
+function printPagination(numberOfResults){
 
   //these variables are for determining pagination - how many pages should be created and how many items should be printed on each page
   itemsPerPage = globalItemsPerPage; //reset to global value every time this function is run
   
   numberOfPages = Math.ceil(numberOfResults / itemsPerPage);
     
-  console.log(builtURL);
-
+    
   //set itemsPerPage to numberOfResults if less than 1 page can be created
   if (numberOfPages<=1){itemsPerPage=numberOfResults}
 
@@ -239,14 +240,6 @@ function printPagination(numberOfResults, builtURL){
     <p>You should make this many pages: ${numberOfPages}</p>
     `//end of pagination html block
 
-    //print page numbers v2
-    for (pageCount=1; pageCount< (numberOfPages+1); pageCount++){
-      document.getElementById("pagination").innerHTML+=`
-        <a id="pageNumber" href="${builtURL}${pageCount}"> ${pageCount} </a>
-      `
-    }
-
-  /*  v1 removed July 4th
   pageUrlMaker(numberOfPages);  //makes an array of unique onclick events to attach to each pageNumber
 
   //print page numbers
@@ -255,7 +248,7 @@ function printPagination(numberOfResults, builtURL){
         <a id="pageNumber" ${pageURLArray[pageCount]}> ${pageCount} </a>
       `
     }
-  */
+  
 }
 
 function pageUrlMaker(numberOfPages, apiCallType){
