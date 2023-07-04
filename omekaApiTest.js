@@ -40,8 +40,10 @@ searchButton = document.getElementById('submitSearch');
 searchButton.addEventListener("click", searchResults);
 
 //wasSearch - used in getData to determine if we are getting a Search result or a specific item Set
+/* removed july 4
 var wasSearch = Boolean;
 wasSearch = false;
+*/
 
 /********************************************************************
  * End of setting Properties ^
@@ -63,15 +65,16 @@ function kickOff() {
 
 //gets the data from Omeka and send it to printResults
 //this function needs an Error check!
-async function getData(givenItemSetID, wasSearch, pageNumber){
+async function getData(givenItemSetID, pageNumber){
 
     //checking to see if getData was run by Search to use appropriate API url, if not get item set results from base_url
     //idea - separate this if into another function - buildAPIURL - need to build urls
-    console.log(wasSearch);
-    if (wasSearch){
-      input = document.getElementById("searchInput").value;
-      builtApiURL = search_url+input;
-      console.log(builtApiURL);
+    
+    //check to see if there was a search value inputted, adjust the api url if so
+    checkSearch = document.getElementById("searchInput").value;
+    if (checkSearch) {
+      builtApiURL = search_url+checkSearch;
+      console.log("hello");
     }
     else {
       builtApiURL = base_url+givenItemSetID+perPageURL+pageURL;
@@ -292,7 +295,8 @@ async function searchResults(){
     printResults(dataBack);
     */
 
-  getData(null,true); //send true to getData and search for user-entered text
+  //getData(null,true); //send true to getData and search for user-entered text
+  getData();
 }
 
 
