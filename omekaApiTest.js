@@ -68,13 +68,13 @@ function kickOff() {
 async function getData(givenItemSetID, pageNumber){
 
     //checking to see if getData was run by Search to use appropriate API url, if not get item set results from base_url
-    //idea - separate this if into another function - buildAPIURL - need to build urls
+    //idea - separate this if statement into another function - buildAPIURL - need to build urls
     
     //check to see if there was a search value inputted, adjust the api url if so
     checkSearch = document.getElementById("searchInput").value;
     if (checkSearch) {
       builtApiURL = search_url+checkSearch;
-      console.log("hello");
+      console.log("hello there is a search word");
     }
     else {
       builtApiURL = base_url+givenItemSetID+perPageURL+pageURL;
