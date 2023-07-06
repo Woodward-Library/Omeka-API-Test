@@ -4,7 +4,8 @@
  * 
  * Requires: HTML divs to be created...more info here
  * 
- * 
+ * Issues:
+ * Multi-word searching hasn't been implemented 
  * 
  *********************************************************************************************************************/
 
