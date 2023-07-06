@@ -65,3 +65,12 @@ a#pageNumber:hover {
 .resultInfo>h2 {
     padding-top:0px;
 }
+
+div#pageNumber{
+  display: inline;
+}
+
+div#pageNumber:hover {
+  cursor: pointer;
+  font-weight: 600;
+ }

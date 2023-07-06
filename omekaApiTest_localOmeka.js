@@ -15,21 +15,21 @@
  * 
  ********************************************************************/
 
-startingItemSetID="1"; //set starting Item Set ID to display on load if none given
+startingItemSetID="534"; //set starting Item Set ID to display on load if none given
 
 /* get url params - maybe this should be a function */
 urlparams = new URL(window.location.toLocaleString());
 itemSetID = urlparams.searchParams.get('itemSetID');
 
 
-base_url="http://localhost:8888/omeka-s/api/items?item_set_id="; //the Omeka Base API URL + item set id holder
-search_url="http://localhost:8888/omeka-s/api/items?search=" //the Omeka Search API URL string - needed for any Search requests
+base_url="https://omeka-dev.library.ubc.ca/api/items?item_set_id="; //the Omeka Base API URL + item set id holder
+search_url="https://omeka-dev.library.ubc.ca/api/items?search=" //the Omeka Search API URL string - needed for any Search requests
 itemPlayerURL="https://ask-library-dev.sites.olt.ubc.ca/omeka-embed-tests/?itemID=";  //URL to where an instance of Mirador player is located, pass Item/ItemSet ID with URL params - open collection items there?
 
 
-globalItemsPerPage = 5;  //set number of Items per page inital load
+globalItemsPerPage = 15;  //set number of Items per page inital load
 perPageURL = "&per_page="+globalItemsPerPage;
-pageURL = "&page="
+pageURL = "&page=" //specific page number to be added in pagination function
 
 //set default image if no item image found
 defaultImage = "https://ask-library-dev.sites.olt.ubc.ca/files/2021/06/49827168481_719b1656a3_o.jpg";
@@ -39,9 +39,6 @@ defaultImage = "https://ask-library-dev.sites.olt.ubc.ca/files/2021/06/498271684
 searchButton = document.getElementById('submitSearch');
 searchButton.addEventListener("click", searchResults);
 
-//wasSearch - used in getData to determine if we are getting a Search result or a specific item Set
-var wasSearch = Boolean;
-wasSearch = false;
 
 /********************************************************************
  * End of setting Properties ^
@@ -57,32 +54,23 @@ function kickOff() {
     if (itemSetID==null) {
       itemSetID = startingItemSetID; //if no itemSet is given in URL, display starting Item SetID
     }
-    getData(itemSetID);  
+    apiURL = buildApiURL(itemSetID); //create the API url for the starting item set
+    console.log(apiURL);
+    getData(apiURL);  
 }
 
 
 //gets the data from Omeka and send it to printResults
-async function getData(givenItemSetID, wasSearch, pageNumber){
+//this function may need a better Error check!
+async function getData(apiURL){
 
-    //checking to see if getData was run by Search to use appropriate API url, if not get item set results from base_url
-    console.log(wasSearch);
-    if (wasSearch){
-      input = document.getElementById("searchInput").value;
-      builtApiURL = search_url+input;
-      console.log(builtApiURL);
-    }
-    else {
-      builtApiURL = base_url+givenItemSetID+perPageURL+pageURL+pageNumber;
-      console.log(builtApiURL);
-    }
-
-    //thre are specific headers we need to grab for total results in the response...this is just a note
-    response = await fetch(builtApiURL)
+    //there are specific headers we need to grab for total results in the response...this is just a note
+    response = await fetch(apiURL)
       .then(response => {
-        console.log(...response.headers);  //arg the custom response headers are blocked by CORS - need to add special allowances in .htaccess...
+        console.log(...response.headers);  //the Omeka custom response headers (such as total results) are blocked by CORS - need to add special allowances in .htaccess...
         
-        testHeaderGet = response.headers.get('omeka-s-total-results'); //just a test to see if we can grab a header value
-        console.log (testHeaderGet);  
+        itemCount = response.headers.get('omeka-s-total-results'); //get the total results - we need this for pagination later
+        console.log (itemCount);  
 
         return response.json();
       })
@@ -92,11 +80,27 @@ async function getData(givenItemSetID, wasSearch, pageNumber){
   
     dataBack = response;
     console.log(dataBack); //just to check the data 
-    itemCount=dataBack.length;
-    console.log(itemCount);
-    console.log(wasSearch);
+    
     printResults(dataBack);  
-    printPagination(itemCount,wasSearch);
+    printPagination(itemCount,builtApiURL);
+}
+
+// build the API URL string
+function buildApiURL (givenItemSetID, pageNumber){
+      //check to see if there was a search value inputted, adjust the api url if exists
+      searchWord = document.getElementById("searchInput").value;
+
+      //determine if there is a search word, if not load the item set
+      if (searchWord) {
+        builtApiURL = search_url+searchWord+perPageURL+pageURL;
+        console.log("hello there is a search word");
+        console.log(builtApiURL);
+      }
+      else {
+        builtApiURL = base_url+givenItemSetID+perPageURL+pageURL;
+        console.log(builtApiURL);
+      }
+  return (builtApiURL);
 }
 
 //some results returned via the api are contained in arrays - this is a helper to create objects from the arrays so we can reference them in printResults
@@ -109,10 +113,11 @@ function arrayToObjectHelper(itemArray){
   return newObj;
 }
 
+
+
+
 //this grabs the key/values and prints them to the Results div...maybe this function does too much
 function printResults(dataBack){
-
-
 
   //clear any existing results
   document.getElementById("results").innerHTML=``;
@@ -125,83 +130,81 @@ function printResults(dataBack){
       <div id="toggleItem" onclick="getData(534)">Stereographs and Glass Lantern slides</div>
     </div>
   `;
-   
-  //needs catch for search results that are LESS than the global ITEMs per page! - results in error
+  
+  //start defining each item and print to page
   for (var results=0; results<globalItemsPerPage; results++){
     console.log(results); 
     itemTitle = dataBack[results]?.['o:title'];
      console.log(itemTitle);
       
-     //check if description exists - using Optional Chaining - writing this here because I'll forget what it is called
-    
-     itemDescription = (dataBack[results]?.['dcterms:description']?.[0]?.['@value']);
-     //check if no item description
-     if (itemDescription==null){
-       itemDescription = "No description available";
-     }
-
-    
-
-
-     itemImage = dataBack[results]?.thumbnail_display_urls.square;
+     //if the item has a title - continue grabbing and printing the item details 
+     if (itemTitle){ 
      
-     itemTypeArray = dataBack[results]?.['@type'];
-     itemTypeObj = arrayToObjectHelper(itemTypeArray);
-     itemType = itemTypeObj?.dctype;
-     console.log(itemType); 
+        //grab description if description exists - using Optional Chaining - writing this here because I'll forget what it is called
+        
+        itemDescription = (dataBack[results]?.['dcterms:description']?.[0]?.['@value']);
+        //check if no item description
+        if (itemDescription==null){
+          itemDescription = "No description available";
+        }
 
-     //check if no Image, and sub default image if there is none
-     if (itemImage==null){
-       itemImage = defaultImage;
-     }
-     
-     console.log(itemImage);
-     
-     bigImage = dataBack[results]?.thumbnail_display_urls.large;
-     itemID = dataBack[results]?.['o:id'];
+        itemImage = dataBack[results]?.thumbnail_display_urls.square;
+        
+        itemTypeArray = dataBack[results]?.['@type'];
+        //check if itemTypeArray exists before running function
+        if (itemTypeArray){
+          itemTypeObj = arrayToObjectHelper(itemTypeArray);
+        }
 
-     itemPartOf = dataBack[results]?.['dcterms:isPartOf']?.[0]?.['@value'];
+        itemType = itemTypeObj?.dctype;
+        console.log(itemType); 
 
-     itemDate = dataBack[results]?.['dcterms:date']?.[0]?.['@value'];
-     itemSet = dataBack[results]?.['o:item_set']?.[0]?.['o:id'];
-     
-     itemMedia = dataBack[results]?.['o:media'];
-     
+        //check if no Image, and sub default image if there is none
+        if (itemImage==null){
+          itemImage = defaultImage;
+        }
+        
+        console.log(itemImage);
+        
+        bigImage = dataBack[results]?.thumbnail_display_urls.large;
+        itemID = dataBack[results]?.['o:id'];
 
-     document.getElementById("results").innerHTML+=`
+        itemPartOf = dataBack[results]?.['dcterms:isPartOf']?.[0]?.['@value'];
 
-      <div class="singleResult">
-        <div class="resultImage">
-          <a href="${bigImage}"><img width="200px" height="200px" src="${itemImage}"></a>
-        </div>
-        <div id="resultInfo" class="resultInfo">
-           <h2>${itemTitle}</h2>
-             <p class="itemType">Type: ${itemType} <br>
-             Part of: ${itemPartOf} <br>
-             Date: ${itemDate} <br>
-             Related Item Set: ${itemSet}
-  
-             </p>
-           <p>${itemDescription}</p>
-           <p><a href="${itemPlayerURL}${itemID}">View this item in mirador viewer</a><br>
-           <a href="${bigImage}">View larger image</a></p>
-        </div>
-      </div>
+        itemDate = dataBack[results]?.['dcterms:date']?.[0]?.['@value'];
+        itemSet = dataBack[results]?.['o:item_set']?.[0]?.['o:id'];
+        
+        itemMedia = dataBack[results]?.['o:media'];
+        
 
-      `//end of html block
+        document.getElementById("results").innerHTML+=`
+
+          <div class="singleResult">
+            <div class="resultImage">
+              <a href="${bigImage}"><img width="200px" height="200px" src="${itemImage}"></a>
+            </div>
+            <div id="resultInfo" class="resultInfo">
+              <h2>${itemTitle}</h2>
+                <p class="itemType">Type: ${itemType} <br>
+                Part of: ${itemPartOf} <br>
+                Date: ${itemDate} <br>
+                Related Item Set: ${itemSet}
       
-      //check if the particular item has attached media
-      checkHasMedia(itemMedia);
-  }
-  //insert pagination function here ?
-  //printPagination(numberOfResults,numberOfPages);
-}
+                </p>
+              <p>${itemDescription}</p>
+              <p><a href="${itemPlayerURL}${itemID}">View this item in mirador viewer</a><br>
+              <a href="${bigImage}">View larger image</a></p>
+            </div>
+          </div>
 
-//need a function to get the Next Page data and attach it as link to page number pagination 
-function getNextPageData(){
-  //to be written - need to use per_page and page api calls
+          `//end of html block
+          
+          //check if the particular item has attached media
+          checkHasMedia(itemMedia);
+    }//end of if has title
+  }//end of for loop
+}//end of function
 
-}
 
 //check if an item has attached media files..by default items with an image appear to have at least one media item, so look for more than 1
 function checkHasMedia (itemMediaArray){ 
@@ -221,14 +224,14 @@ function checkHasMedia (itemMediaArray){
 
 }
 
-function printPagination(numberOfResults){
+function printPagination(numberOfResults, builtURL){
 
   //these variables are for determining pagination - how many pages should be created and how many items should be printed on each page
   itemsPerPage = globalItemsPerPage; //reset to global value every time this function is run
   
-  numberOfPages = Math.ceil(numberOfResults / itemsPerPage);
-    
-    
+  
+  numberOfPages = Math.ceil(numberOfResults / itemsPerPage); //round up number of pages to create
+  
   //set itemsPerPage to numberOfResults if less than 1 page can be created
   if (numberOfPages<=1){itemsPerPage=numberOfResults}
 
@@ -240,52 +243,25 @@ function printPagination(numberOfResults){
     <p>You should make this many pages: ${numberOfPages}</p>
     `//end of pagination html block
 
-  pageUrlMaker(numberOfPages);  //makes an array of unique onclick events to attach to each pageNumber
-
-  //print page numbers
+    //print page numbers v2
     for (pageCount=1; pageCount< (numberOfPages+1); pageCount++){
+      apiURL = builtURL+pageCount;
+      console.log(apiURL);
       document.getElementById("pagination").innerHTML+=`
-        <a id="pageNumber" ${pageURLArray[pageCount]}> ${pageCount} </a>
+        <div id="pageNumber" onclick="getData('${apiURL}')"> ${pageCount} </div>
+        
       `
     }
-  
+
 }
 
-function pageUrlMaker(numberOfPages, apiCallType){
-  pageURLArray = [];
-  
-
-  if (apiCallType==true){
-    getDataCallPart = "null, true,";
-  }
-  else {
-    getDataCallPart = apiCallType + ", null,";
-  }
-  for (page=0; page<=numberOfPages; page++) {
-     getDataString = "getData("+getDataCallPart+page+ ")";
-     getDataCall = "onclick=" +getDataString;
-     setHREF = "alt='" +getDataString+ " ' ";
-     pageURLArray[page]= getDataCall ;
-  }
-  return pageURLArray;
-}
 
 async function searchResults(){
   //clear existing info
   document.getElementById("results").innerHTML=`<p>Search Results</p>`
-  
-  
-   
-  
-  //get data again old method
-  /*  searchResponse = await fetch(search_url+input);
-    dataBack = await searchResponse.json();  //i want my data back
 
-    console.log(dataBack);
-    printResults(dataBack);
-    */
-
-  getData(null,true); //send true to getData and search for user-entered text
+  goSearch = buildApiURL(); //build the API url to retrieve search results
+  getData(goSearch);
 }
 
 
