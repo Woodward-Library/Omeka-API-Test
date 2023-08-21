@@ -25,7 +25,7 @@ itemSetID = urlparams.searchParams.get('itemSetID');
 
 base_url="https://omeka-dev.library.ubc.ca/api/items?item_set_id="; //the Omeka Base API URL + item set id holder
 search_url="https://omeka-dev.library.ubc.ca/api/items?search=" //the Omeka Search API URL string - needed for any Search requests
-itemPlayerURL="https://ask-library-dev.sites.olt.ubc.ca/omeka-embed-tests/?itemID=";  //URL to where an instance of Mirador player is located, pass Item/ItemSet ID with URL params - open collection items there?
+itemPlayerURL="https://gallery.library.ubc.ca/viewer/?itemID=";  //URL to where an instance of Mirador player is located, pass Item/ItemSet ID with URL params - open collection items there?
 
 
 globalItemsPerPage = 15;  //set number of Items per page inital load
@@ -114,6 +114,21 @@ function arrayToObjectHelper(itemArray){
   return newObj;
 }
 
+//this function prints out the tabs to toggle between item sets - this is hardcoded to specific api urls...look into dynamically identifying item-sets in future?
+function printTabs(){
+  //toggle for collections
+  klondike = buildApiURL(31);
+  chung = buildApiURL(11);
+  slides= buildApiURL(534);
+  console.log(chung);
+  document.getElementById("results").innerHTML+=`
+    <div id="collectionToggle">
+      <div id="toggleItem" onclick="getData('${klondike}')">Phil Lind Klondike Goldrush</div>
+      <div id="toggleItem" onclick="getData('${chung}')">Chung Collection</div>
+      <div id="toggleItem" onclick="getData('${slides}')">Stereographs and Glass Lantern slides</div>
+    </div>
+  `;
+}
 
 
 
@@ -123,14 +138,7 @@ function printResults(dataBack){
   //clear any existing results
   document.getElementById("results").innerHTML=``;
 
-  //toggle for collections
-  document.getElementById("results").innerHTML+=`
-    <div id="collectionToggle">
-      <div id="toggleItem" onclick="getData(31)">Phil Lind Klondike Goldrush</div>
-      <div id="toggleItem" onclick="getData(11)">Chung Collection</div>
-      <div id="toggleItem" onclick="getData(534)">Stereographs and Glass Lantern slides</div>
-    </div>
-  `;
+  printTabs(); //print the tabs to toggle between item sets
   
   //start defining each item and print to page
   for (var results=0; results<globalItemsPerPage; results++){
