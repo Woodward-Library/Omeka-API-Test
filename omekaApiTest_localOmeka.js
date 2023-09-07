@@ -1,6 +1,6 @@
 /*********************************************************************************************************************
  * Omeka API - Test: Connect to Omeka API, grab key/values of ItemSet, display on page, and run Search API query
- * Omeka version tested: 3.2.1
+ * Omeka version tested: 4.0.1
  * 
  * Requires: HTML divs to be created...more info here
  * 
@@ -24,8 +24,8 @@ itemSetID = urlparams.searchParams.get('itemSetID');
 
 
 base_url="https://omeka-dev.library.ubc.ca/api/items?item_set_id="; //the Omeka Base API URL + item set id holder
-search_url="https://omeka-dev.library.ubc.ca/api/items?search=" //the Omeka Search API URL string - needed for any Search requests
-itemPlayerURL="https://gallery.library.ubc.ca/viewer/?itemID=";  //URL to where an instance of Mirador player is located, pass Item/ItemSet ID with URL params - open collection items there?
+search_url="https://omeka-dev.library.ubc.ca/api/items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
+itemPlayerURL="https://gallery.library.ubc.ca/viewer/?itemID=";  //URL to where an instance of Mirador player is located, pass Item/ItemSet ID with URL params
 
 
 globalItemsPerPage = 15;  //set number of Items per page inital load
@@ -58,6 +58,7 @@ function kickOff() {
     apiURL = buildApiURL(itemSetID); //create the API url for the starting item set
     console.log(apiURL);
     getData(apiURL);  
+    printTabs(); //print the tabs to toggle between item sets
 }
 
 
@@ -90,7 +91,7 @@ async function getData(apiURL){
 function buildApiURL (givenItemSetID, pageNumber){
       //check to see if there was a search value inputted, adjust the api url if exists
       searchWord = document.getElementById("searchInput").value;
-
+      console.log(searchWord);
       //determine if there is a search word, if not load the item set
       if (searchWord) {
         builtApiURL = search_url+searchWord+perPageURL+pageURL;
@@ -116,12 +117,14 @@ function arrayToObjectHelper(itemArray){
 
 //this function prints out the tabs to toggle between item sets - this is hardcoded to specific api urls...look into dynamically identifying item-sets in future?
 function printTabs(){
+  //clear Search bar here - so clicking toggles does not get confused if Search was performed previously
+  document.getElementById("searchInput").value = "";
+  
   //toggle for collections
   klondike = buildApiURL(31);
   chung = buildApiURL(11);
   slides= buildApiURL(534);
-  console.log(chung);
-  document.getElementById("results").innerHTML+=`
+  document.getElementById("tabs").innerHTML+=`
     <div id="collectionToggle">
       <div id="toggleItem" onclick="getData('${klondike}')">Phil Lind Klondike Goldrush</div>
       <div id="toggleItem" onclick="getData('${chung}')">Chung Collection</div>
@@ -130,16 +133,15 @@ function printTabs(){
   `;
 }
 
+//idea - insert function to run TAB getData separately - so we can add a clear the Search input area each time
 
 
-//this grabs the key/values and prints them to the Results div...maybe this function does too much
+//this grabs the key/values of each Item and Prints them to the Results div...maybe this function does too much
 function printResults(dataBack){
 
-  //clear any existing results
+  //clear any existing items in the results area
   document.getElementById("results").innerHTML=``;
-
-  printTabs(); //print the tabs to toggle between item sets
-  
+ 
   //start defining each item and print to page
   for (var results=0; results<globalItemsPerPage; results++){
     console.log(results); 
@@ -147,10 +149,9 @@ function printResults(dataBack){
      console.log(itemTitle);
       
      //if the item has a title - continue grabbing and printing the item details 
+     //grab item details if the details exist using Optional Chaining - writing this here to remind myself
      if (itemTitle){ 
-     
-        //grab description if description exists - using Optional Chaining - writing this here because I'll forget what it is called
-        
+           
         itemDescription = (dataBack[results]?.['dcterms:description']?.[0]?.['@value']);
         //check if no item description
         if (itemDescription==null){
@@ -185,7 +186,7 @@ function printResults(dataBack){
         
         itemMedia = dataBack[results]?.['o:media'];
         
-
+        //print the Item to the page
         document.getElementById("results").innerHTML+=`
 
           <div class="singleResult">
@@ -266,13 +267,11 @@ function printPagination(numberOfResults, builtURL){
 
 
 async function searchResults(){
-  //clear existing info
+  //clear existing info and display Search Results
   document.getElementById("results").innerHTML=`<p>Search Results</p>`
-
   goSearch = buildApiURL(); //build the API url to retrieve search results
   getData(goSearch);
 }
 
-
-
-kickOff();
+//the start of everything
+kickOff(); 
