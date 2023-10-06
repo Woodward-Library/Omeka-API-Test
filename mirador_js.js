@@ -15,7 +15,7 @@ else if (itemID) {
 }
 //no params set then set default view
 else {
-    manifesturl="http://localhost:8888/omeka-s/iiif-presentation/3/item-set/1/collection"
+    manifesturl="https://omeka.library.ubc.ca/iiif-presentation/3/item/589/manifest"
 }
 
 

@@ -23,8 +23,8 @@ urlparams = new URL(window.location.toLocaleString());
 itemSetID = urlparams.searchParams.get('itemSetID');
 
 
-base_url="https://omeka-dev.library.ubc.ca/api/items?item_set_id="; //the Omeka Base API URL + item set id holder
-search_url="https://omeka-dev.library.ubc.ca/api/items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
+base_url="https://omeka.library.ubc.ca/api/items?item_set_id="; //the Omeka Base API URL + item set id holder
+search_url="https://omeka.library.ubc.ca/api/items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
 itemPlayerURL="https://gallery.library.ubc.ca/viewer/?itemID=";  //URL to where an instance of Mirador player is located, pass Item/ItemSet ID with URL params
 
 

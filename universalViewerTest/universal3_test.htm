@@ -1,0 +1,130 @@
+<!--*********************************************************************************************************************
+ * Universal Viewer v3 test - needs URL parameter to load manifest - works...
+ * 
+ *********************************************************************************************************************-->
+
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Universal Viewer Examples</title>
+   
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://unpkg.com/universalviewer@3.1.4/dist/uv.css"
+    />
+      <script
+      type="text/javascript"
+      src="https://unpkg.com/universalviewer@3.1.4/dist/lib/offline.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/universalviewer@3.1.4/dist/helpers.js"
+    ></script>
+    <style>
+      body {
+        margin: 0px;
+        padding: 20px;
+      }
+
+      #uv {
+        width: 924px;
+        height: 668px;
+        /* width: 1024px;
+            height: 576px; */
+      }
+
+      #options {
+        padding: 20px 0 0 0;
+      }
+    </style>
+  </head>
+  <body>
+
+
+    <div id="uv" class="uv"></div>
+
+    <script>
+
+      $(function() {
+  
+          var $UV = $('#uv');
+  
+          function resize() {
+              var windowWidth = window.innerWidth;
+              var windowHeight = window.innerHeight;
+              $UV.width(windowWidth);
+              $UV.height(windowHeight);
+          }
+  
+          $(window).on('resize', function() {
+              resize();
+          });
+          
+          resize();
+      });
+      
+  </script>
+
+     <script type="text/javascript">
+     const data = {
+  manifest: "https://omeka-dev.library.ubc.ca/iiif-presentation/3/item/605/manifest",
+  embedded: true // needed for codesandbox frame
+};
+
+window.addEventListener('uvLoaded', function(e) { 
+            urlDataProvider = new UV.URLDataProvider(true);
+            console.log(urlDataProvider);
+            var formattedLocales;
+            var locales = urlDataProvider.get('locales', '');
+
+            if (locales) {
+                var names = locales.split(',');
+                formattedLocales = [];
+
+                for (var i in names) {
+                    var nameparts = String(names[i]).split(':');
+                    formattedLocales[i] = {name: nameparts[0], label: nameparts[1]};
+                }
+                
+            } else {
+                formattedLocales = [
+                    {
+                        name: 'en-GB'
+                    }
+                ]
+            }
+
+            uv = createUV('#uv', {
+                root: "https://unpkg.com/universalviewer@3.1.4/dist/",
+                iiifResourceUri: urlDataProvider.get('manifest'),
+                configUri: urlDataProvider.get('config'),
+                collectionIndex: Number(urlDataProvider.get('c', 0)),
+                manifestIndex: Number(urlDataProvider.get('m', 0)),
+                sequenceIndex: Number(urlDataProvider.get('s', 0)),
+                canvasIndex: Number(urlDataProvider.get('cv', 0)),
+                rangeId: urlDataProvider.get('rid', 0),
+                rotation: Number(urlDataProvider.get('r', 0)),
+                xywh: urlDataProvider.get('xywh', ''),
+                embedded: true,
+                locales: formattedLocales
+            }, urlDataProvider);
+
+        }, false);
+
+
+    </script>
+
+    <!-- Put at the bottom of the page to ensure that the uvLoaded event isn't fired before a listener is registered -->
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/universalviewer@3.1.4/dist/uv.js"
+    ></script>
+  </body>
+</html>
