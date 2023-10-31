@@ -68,8 +68,10 @@ function kickOff() {
 
 //gets the data from Omeka and send it to printResults
 //this function may need a better Error check!
-async function getData(apiURL){
-
+async function getData(apiURL,pageNumber){
+    if (pageNumber){
+        apiURL = apiURL + pageNumber;
+    }
     //there are specific headers we need to grab for total results in the response...this is just a note
     response = await fetch(apiURL)
       .then(response => {
@@ -261,10 +263,10 @@ function printPagination(numberOfResults, builtURL){
 
     //print page numbers v2
     for (pageCount=1; pageCount< (numberOfPages+1); pageCount++){
-      apiURL = builtURL+pageCount;
+      //apiURL = builtURL+pageCount;
       console.log(apiURL);
       document.getElementById("pagination").innerHTML+=`
-        <div class="pageNumber" onclick="getData('${apiURL}')"> ${pageCount} </div>
+        <div class="pageNumber" onclick="getData('${apiURL}',${pageCount})"> ${pageCount} </div>
         
       `
     }
