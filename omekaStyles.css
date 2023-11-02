@@ -96,11 +96,12 @@ font-weight: 600;
   color: #000;
   border-top: 3px solid #313031;
   position: relative;
-  height: 150px;
+  height: 200px;
+  display: flex;
 }
 
 #collectionBackground img {
-  height: 150px;
+  height: 200px;
   width: 100%;
   object-fit: cover;
 }
@@ -113,10 +114,9 @@ div#collectionBackground {
 }
 
 h1#collectionHeading {
-  position: absolute;
   padding: 15px;
   width: 100%;
-  margin-bottom: auto;
+  margin-top: auto;
   z-index:1;
   color: #fff;
 }
@@ -125,7 +125,7 @@ div#collectionClearCover {
   background: linear-gradient(100deg,rgb(0,0,0) 53%,rgba(255,255,255,0) 100%);
   position: absolute;
   z-index: 0;
-  height: 150px;
+  height: 200px;
   width: 100%;
   opacity: 0.5;
 }

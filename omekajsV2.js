@@ -40,7 +40,7 @@ defaultImage = "https://brand.ubc.ca/files/2018/09/Logos_1_2CrestDownload_768px.
 //set Collection Banner images
 collectionBannerImage = ""; //default image
 chungBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/08/taylors_Cropped.jpg";
-stereographsBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/10/vancouver_LanternSlides.gif";
+stereographsBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lanternSlideCropped.jpg";
 lindBanner = "https://gallery.library.ubc.ca/files/2023/08/arc1820_cropped2-2048x1409.jpg";
 
 /********************************************************************
