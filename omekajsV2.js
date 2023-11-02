@@ -28,7 +28,8 @@ itemSetID = urlparams.searchParams.get('itemSetID');
 const base_url="https://omeka-dev.library.ubc.ca/api/"; //the Omeka Base API URL + item set id holder
 const search_url="https://omeka-dev.library.ubc.ca/api/items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
 const itemPlayerURL="https://gallery.library.ubc.ca/viewer/?itemID=";  //URL to where an instance of Mirador/Universal viewer is located, pass the itemID with URL params; build manifest URL within that location
-const item_url=base_url + "items?item_set_id=";
+const item_url= base_url + "items?item_set_id=";
+const item_set_url = base_url + "item_sets"
 
 globalItemsPerPage = 25;  //set number of Items per page inital load
 perPageURL = "&per_page="+globalItemsPerPage; //creating the url segment to set items per page
@@ -68,7 +69,7 @@ function kickOff() {
 }
 
 
-//gets the data from Omeka and send it to printResults
+//gets the item data from Omeka and send it to printResults
 //this function may need a better Error check!
 async function getData(apiURL){
 
@@ -125,6 +126,8 @@ function buildHTML(){
   </div>
   <div id="pagination">
   </div>  
+  <div id="collectionNav">
+  </div>
   `
   //add listener for Search button click
   searchButton = document.getElementById('submitSearch');
@@ -341,9 +344,46 @@ printItemTabs: prints the Item-set tabs for Chung, Lind and Stereographs using i
 
 *******************************************************/
 
+//gets the item-set data from Omeka 
+async function getItemSetData(apiURL){
 
+  //there are specific headers we need to grab for total results in the response...this is just a note
+    response = await fetch(apiURL)
+      .then(response => {
+        return response.json();
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });  
+  
+    
+    console.log(response); //just to check the data 
+    printNav(response);
+}
+
+
+function printNav (itemSetData){
+  for (var results=0; results<itemSetData.length; results++){
+    
+    itemSetTitle = itemSetData[results]?.['o:title'];
+    itemSetImageURL = itemSetData[results]?.thumbnail_display_urls?.large;
+    itemSetCollectionID = itemSetData[results]?.['o:id'];
+    console.log(itemSetTitle);
+    console.log(itemSetImageURL);
+    console.log(itemSetCollectionID);
+    document.getElementById("collectionNav").innerHTML +=`
+    <div id="">
+      ${itemSetTitle}
+    </div>
+    
+    `
+  }
+}
 
 //the start of everything
 kickOff();  
+
+
+getItemSetData(item_set_url);
 
 
