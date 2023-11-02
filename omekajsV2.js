@@ -9,7 +9,7 @@
  * 
  * Issues:
  *   tabs are manually coded - requires new api request to dynamically create tabs from item-sets that exist in Omeka
- * 
+ *   see 'future functions' section
  *********************************************************************************************************************/
 
 
@@ -25,9 +25,10 @@ startingItemSetID="534"; //set starting Item Set ID to display on load if none g
 urlparams = new URL(window.location.toLocaleString());
 itemSetID = urlparams.searchParams.get('itemSetID');
 
-base_url="https://omeka-dev.library.ubc.ca/api/items?item_set_id="; //the Omeka Base API URL + item set id holder
-search_url="https://omeka-dev.library.ubc.ca/api/items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
-itemPlayerURL="https://gallery.library.ubc.ca/viewer/?itemID=";  //URL to where an instance of Mirador/Universal viewer is located, pass the itemID with URL params; build manifest URL within that location
+const base_url="https://omeka-dev.library.ubc.ca/api/"; //the Omeka Base API URL + item set id holder
+const search_url="https://omeka-dev.library.ubc.ca/api/items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
+const itemPlayerURL="https://gallery.library.ubc.ca/viewer/?itemID=";  //URL to where an instance of Mirador/Universal viewer is located, pass the itemID with URL params; build manifest URL within that location
+const item_url=base_url + "items?item_set_id=";
 
 globalItemsPerPage = 25;  //set number of Items per page inital load
 perPageURL = "&per_page="+globalItemsPerPage; //creating the url segment to set items per page
@@ -39,8 +40,8 @@ defaultImage = "https://brand.ubc.ca/files/2018/09/Logos_1_2CrestDownload_768px.
 //set Collection Banner images
 collectionBannerImage = ""; //default image
 chungBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/08/taylors_Cropped.jpg";
-stereographsBanner = "stereograph banner";
-lindBanner = "Lind Banner";
+stereographsBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/10/vancouver_LanternSlides.gif";
+lindBanner = "https://gallery.library.ubc.ca/files/2023/08/arc1820_cropped2-2048x1409.jpg";
 
 /********************************************************************
  * End of setting Properties ^
@@ -103,7 +104,7 @@ function buildApiURL (givenItemSetID){
         console.log(builtApiURL);
       }
       else {
-        builtApiURL = base_url+givenItemSetID+perPageURL+pageURL;
+        builtApiURL = item_url+givenItemSetID+perPageURL+pageURL;
         console.log(builtApiURL);
       }
   return (builtApiURL);
@@ -114,7 +115,8 @@ function buildHTML(){
   document.getElementById("omekaContainer").innerHTML=`
   <div id="collectionBannerContainer">
     <h1 id="collectionHeading"></h1>
-    <div id="collectionBackground"><img src="${chungBanner}">54654</img></div>
+    <div id="collectionClearCover"></div>
+    <div id="collectionBackground"></div>
   </div>
   <div class="searchOmeka"><p>Search: <input id="searchInput"></input><button id="submitSearch">Submit</button></p></div>
   <div id="tabs">
@@ -291,7 +293,7 @@ async function searchResults(){
 
 
 function displayItemSetBanner(collectionName,theItemSetID){
-
+  //check if itemsetID passed in tab
   if (theItemSetID){
     itemSetID = theItemSetID;
   }
@@ -314,9 +316,31 @@ function displayItemSetBanner(collectionName,theItemSetID){
       
     }
     
-    document.getElementById("collectionBackground").innerHTML += collectionBannerImage;
+    document.getElementById("collectionBackground").innerHTML = `<img src="${collectionBannerImage}"></img>`;
     
 }
+
+/***********************************************
+* 
+* Future functions: Goal is to remove any 'hardcoded' itemSet code to allow for future item set additions
+*
+*************************************************
+
+
+getItemSet: get the Item-sets information
+-needed to grab the Item-set title, and image for item header
+-banner image can be set as thumbnail in Omeka installation
+-new api call needed
+
+printItemSet Header: prints the item-set header (banner)
+-will replace displayItemsetBanner
+
+printItemTabs: prints the Item-set tabs for Chung, Lind and Stereographs using info grabbed from getItemSet
+-will replace current printTabs
+-perhaps will use dropdown
+
+*******************************************************/
+
 
 
 //the start of everything

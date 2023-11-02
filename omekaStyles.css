@@ -90,20 +90,42 @@ font-weight: 600;
 }
 
 #collectionBannerContainer{
-    margin-left: -15px;
-    margin-right: -15px;
-    padding: 35px 15px;
-    background-color: #b1a38a;
-    margin-top: 0px;
-    color: #000;
-    border-top: 3px solid #313031;
+  margin-left: -15px;
+  margin-right: -15px;
+  margin-top: 0px;
+  color: #000;
+  border-top: 3px solid #313031;
+  position: relative;
+  height: 150px;
 }
 
 #collectionBackground img {
   height: 150px;
   width: 100%;
   object-fit: cover;
-  object-fit: cover;
-  position: fixed;
+}
+
+div#collectionBackground {
+  position: absolute;
   z-index: -1;
+  object-fit: cover;
+  width: 100%;
+}
+
+h1#collectionHeading {
+  position: absolute;
+  padding: 15px;
+  width: 100%;
+  margin-bottom: auto;
+  z-index:1;
+  color: #fff;
+}
+
+div#collectionClearCover {
+  background: linear-gradient(100deg,rgb(0,0,0) 53%,rgba(255,255,255,0) 100%);
+  position: absolute;
+  z-index: 0;
+  height: 150px;
+  width: 100%;
+  opacity: 0.5;
 }
