@@ -363,6 +363,12 @@ async function getItemSetData(apiURL){
 
 
 function printNav (itemSetData){
+  document.getElementById("collectionNav").innerHTML +=`
+  <label for="collection-select">Choose a collection:</label>
+  <select name="collection" id="collectionSelect"></select>
+
+  `
+
   for (var results=0; results<itemSetData.length; results++){
     
     itemSetTitle = itemSetData[results]?.['o:title'];
@@ -371,10 +377,13 @@ function printNav (itemSetData){
     console.log(itemSetTitle);
     console.log(itemSetImageURL);
     console.log(itemSetCollectionID);
-    document.getElementById("collectionNav").innerHTML +=`
-    <div id="">
+    document.getElementById("collectionSelect").innerHTML +=`
+    
+     
+      <option value=${itemSetTitle}>
       ${itemSetTitle}
-    </div>
+      </option>
+    
     
     `
   }
