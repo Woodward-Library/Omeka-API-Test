@@ -34,17 +34,35 @@ p.itemType {
     
     display: flex;
     justify-content: center;
+    align-items: center;
     padding: 5px;
+    flex-direction: column;
+}
+
+select#collectionSelect {
+  height: 32px;
+  border-radius: 5px;
+}
+
+div#collectionNav {
+  padding: 10px;
+
 }
 
 input#searchInput {
-    height: 25px;
+    height: 32px;
+    
 }
 
 button#submitSearch {
     height: 32px;
     margin-left: 5px;
     margin-top:0px;
+}
+
+button#collectionButton {
+  height: 32px;
+  padding: 5px 10px;
 }
 
 div#collectionToggle {

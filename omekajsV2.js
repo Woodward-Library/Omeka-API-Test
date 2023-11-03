@@ -19,11 +19,11 @@
  * 
  ********************************************************************/
 
-startingItemSetID="534"; //set starting Item Set ID to display on load if none given
+const startingItemSetID="534"; //set starting Item Set ID to display on load if none given
 
 /* get url params to load specific Item set into the results - ex: ?itemSetID=[item set ID in Omeka]*/
-urlparams = new URL(window.location.toLocaleString());
-itemSetID = urlparams.searchParams.get('itemSetID');
+let urlparams = new URL(window.location.toLocaleString());
+let itemSetID = urlparams.searchParams.get('itemSetID');
 
 const base_url="https://omeka-dev.library.ubc.ca/api/"; //the Omeka Base API URL + item set id holder
 const search_url="https://omeka-dev.library.ubc.ca/api/items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
@@ -31,18 +31,18 @@ const itemPlayerURL="https://gallery.library.ubc.ca/viewer/?itemID=";  //URL to 
 const item_url= base_url + "items?item_set_id=";
 const item_set_url = base_url + "item_sets"
 
-globalItemsPerPage = 25;  //set number of Items per page inital load
-perPageURL = "&per_page="+globalItemsPerPage; //creating the url segment to set items per page
-pageURL = "&page=" //specific page number to be added in pagination function
+const globalItemsPerPage = 25;  //set number of Items per page inital load
+const perPageURL = "&per_page="+globalItemsPerPage; //creating the url segment to set items per page
+const pageURL = "&page=" //specific page number to be added in pagination function
 
 //set default item image if no item image is found
-defaultImage = "https://brand.ubc.ca/files/2018/09/Logos_1_2CrestDownload_768px.jpg";
+const defaultImage = "https://brand.ubc.ca/files/2018/09/Logos_1_2CrestDownload_768px.jpg";
 
-//set Collection Banner images
-collectionBannerImage = ""; //default image
-chungBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/08/taylors_Cropped.jpg";
-stereographsBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lanternSlideCropped.jpg";
-lindBanner = "https://gallery.library.ubc.ca/files/2023/08/arc1820_cropped2-2048x1409.jpg";
+//set Collection Banner images - in future - grab default collection image from Omeka so banners can be set from there
+let collectionBannerImage = ""; //default image
+const chungBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/08/taylors_Cropped.jpg";
+const stereographsBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lanternSlideCropped.jpg";
+const lindBanner = "https://gallery.library.ubc.ca/files/2023/08/arc1820_cropped2-2048x1409.jpg";
 
 /********************************************************************
  * End of setting Properties ^
@@ -62,10 +62,10 @@ function kickOff() {
     }
     buildHTML(); //build the HTML containers for Omeka items and results
     displayItemSetBanner();
-    apiURL = buildApiURL(itemSetID); //create the API url for the starting item set
+    let apiURL = buildApiURL(itemSetID); //create the API url for the starting item set
     console.log(apiURL);
     getData(apiURL);  
-      
+    getItemSetData(item_set_url); //for getting the collection item-set information
 }
 
 
@@ -74,7 +74,7 @@ function kickOff() {
 async function getData(apiURL){
 
   //there are specific headers we need to grab for total results in the response...this is just a note
-    response = await fetch(apiURL)
+    let response = await fetch(apiURL)
       .then(response => {
         console.log(...response.headers);  //the Omeka custom response headers (such as total results) are blocked by CORS - need to add special allowances in .htaccess...
         
@@ -86,26 +86,24 @@ async function getData(apiURL){
       .catch(error => {
         console.error('Error:', error);
       });  
-  
-    dataBack = response;
-    console.log(dataBack); //just to check the data 
-    printResults(dataBack);  
+    console.log(response); //just to check the data 
+    printResults(response);  
     printPagination(itemCount,apiURL);
 }
 
 // build the API URL string
 function buildApiURL (givenItemSetID){
       //check to see if there was a search value inputted, adjust the api url if exists
-      searchWord = document.getElementById("searchInput").value;
+      let searchWord = document.getElementById("searchInput").value;
       console.log(searchWord);
       //determine if there is a search word, if not load the item set
       if (searchWord) {
-        builtApiURL = search_url+searchWord+perPageURL+pageURL;
+        var builtApiURL = search_url+searchWord+perPageURL+pageURL;
         console.log("hello there is a search word");
         console.log(builtApiURL);
       }
       else {
-        builtApiURL = item_url+givenItemSetID+perPageURL+pageURL;
+        var builtApiURL = item_url+givenItemSetID+perPageURL+pageURL;
         console.log(builtApiURL);
       }
   return (builtApiURL);
@@ -119,23 +117,27 @@ function buildHTML(){
     <div id="collectionClearCover"></div>
     <div id="collectionBackground"></div>
   </div>
-  <div class="searchOmeka"><p>Search: <input id="searchInput"></input><button id="submitSearch">Submit</button></p></div>
-  <div id="tabs">
+  <div class="searchOmeka">
+    <div id="searchField"><p><input id="searchInput" aria-label="Search Collections"></input><button id="submitSearch">Search</button></p></div>
+    <div id="collectionNav">
+    </div>
   </div>
   <div id="results">
   </div>
   <div id="pagination">
   </div>  
-  <div id="collectionNav">
+  <div id="tabs">
   </div>
+  
   `
   //add listener for Search button click
-  searchButton = document.getElementById('submitSearch');
+  let searchButton = document.getElementById('submitSearch');
   searchButton.addEventListener("click", searchResults);
 }
 
 
 //some results returned via the api are contained in arrays - this is a helper to create objects from the arrays so we can reference them in printResults
+//not sure if necessary, possible remove in future
 function arrayToObjectHelper(itemArray){
   const newObj = {};
   itemArray.forEach(item => {
@@ -146,11 +148,12 @@ function arrayToObjectHelper(itemArray){
 }
 
 //this function prints out the tabs to toggle between item sets - this is hardcoded to specific api urls...look into dynamically identifying item-sets in future?
+//can be removed if switch to dropdown
 function printTabs(){
   //toggle for collections
-  klondike = 31;
-  chung = 11;
-  slides= 534;
+  let klondike = 31;
+  let chung = 11;
+  let slides= 534;
   document.getElementById("tabs").innerHTML=`
     <div id="collectionToggle">
       <div class="toggleItem" onclick="clearSearchAndGet('${chung}'); displayItemSetBanner('Chung Collection', 11); ">Chung Collection</div>        
@@ -160,7 +163,7 @@ function printTabs(){
   `;
 }
 
-//clear the search when user clicks tabs
+//clear the search when user clicks tabs - if tabs are removed we can remove this function
 function clearSearchAndGet(theItemSetID){  
     //if a tab is clicked we want to clear out any existing search value
     document.getElementById('searchInput').value = null;
@@ -182,48 +185,47 @@ function printResults(dataBack){
   //start defining each item and print to page
   for (var results=0; results<globalItemsPerPage; results++){
     console.log(results); 
-    itemTitle = dataBack[results]?.['o:title'];
+    let itemTitle = dataBack[results]?.['o:title'];
      console.log(itemTitle);
       
      //if the item has a title - continue grabbing and printing the item details 
      //grab item details if the details exist using Optional Chaining - writing this here to remind myself
      if (itemTitle){ 
            
-        itemDescription = (dataBack[results]?.['dcterms:description']?.[0]?.['@value']);
+        let itemDescription = (dataBack[results]?.['dcterms:description']?.[0]?.['@value']);
         //check if no item description
         if (itemDescription==null){
           itemDescription = "";
         }
 
-        itemImage = dataBack[results]?.thumbnail_display_urls.square;
-        
-        itemTypeArray = dataBack[results]?.['@type'];
-        //check if itemTypeArray exists before running function
-        if (itemTypeArray){
-          itemTypeObj = arrayToObjectHelper(itemTypeArray);
-        }
+        let itemImage = dataBack[results]?.thumbnail_display_urls.square;
+            //check if no Image, and sub default image if there is none
+            if (itemImage==null){
+                itemImage = defaultImage;
+            }
 
-        itemType = itemTypeObj?.dctype;
+        let itemTypeArray = dataBack[results]?.['@type'];
+          //check if itemTypeArray exists before running function
+          if (itemTypeArray){
+            itemTypeObj = arrayToObjectHelper(itemTypeArray);
+          }
+
+        let itemType = itemTypeObj?.dctype;
         console.log(itemType); 
 
-        //check if no Image, and sub default image if there is none
-        if (itemImage==null){
-          itemImage = defaultImage;
-        }
+
         
-        console.log(itemImage);
-        
-        bigImage = dataBack[results]?.thumbnail_display_urls.large;
-        itemID = dataBack[results]?.['o:id'];
+        let bigImage = dataBack[results]?.thumbnail_display_urls.large;
+        let itemID = dataBack[results]?.['o:id'];
         
         let itemIdentifier = dataBack[results]?.['dcterms:identifier']?.[0]?.['@value'];
 
-        itemPartOf = dataBack[results]?.['dcterms:isPartOf']?.[0]?.['@value'];
+        let itemPartOf = dataBack[results]?.['dcterms:isPartOf']?.[0]?.['@value'];
 
-        itemDate = dataBack[results]?.['dcterms:date']?.[0]?.['@value'];
-        itemSet = dataBack[results]?.['o:item_set']?.[0]?.['o:id'];
+        let itemDate = dataBack[results]?.['dcterms:date']?.[0]?.['@value'];
+        let itemSet = dataBack[results]?.['o:item_set']?.[0]?.['o:id'];
         
-        itemMedia = dataBack[results]?.['o:media'];
+        let itemMedia = dataBack[results]?.['o:media'];
         
         //print the Item to the page
         document.getElementById("results").innerHTML+=`
@@ -257,16 +259,16 @@ function printResults(dataBack){
 function printPagination(numberOfResults, builtURL){
 
   //these variables are for determining pagination - how many pages should be created and how many items should be printed on each page
-  itemsPerPage = globalItemsPerPage; //reset to global value every time this function is run
+  let itemsPerPage = globalItemsPerPage; //reset to global value every time this function is run
     
-  numberOfPages = Math.ceil(numberOfResults / itemsPerPage); //round up number of pages to create
+  let numberOfPages = Math.ceil(numberOfResults / itemsPerPage); //round up number of pages to create
   
   //set itemsPerPage to numberOfResults if less than 1 page can be created
   if (numberOfPages<=1){itemsPerPage=numberOfResults}
   
   //fix to 'sanitize' builtapi url to remove any page numbers passed when this loops more than once
-  findURLEnd = "&page=";
-  const cleanBuiltURL = builtURL.slice(0,builtURL.lastIndexOf(findURLEnd))+"&page="; 
+  let findURLEnd = "&page=";
+  let cleanBuiltURL = builtURL.slice(0,builtURL.lastIndexOf(findURLEnd))+"&page="; 
   console.log(cleanBuiltURL);
 
   //clear out any existing page numbers
@@ -330,7 +332,7 @@ function displayItemSetBanner(collectionName,theItemSetID){
 *************************************************
 
 
-getItemSet: get the Item-sets information
+getItemSetData: get the Item-sets information
 -needed to grab the Item-set title, and image for item header
 -banner image can be set as thumbnail in Omeka installation
 -new api call needed
@@ -338,61 +340,66 @@ getItemSet: get the Item-sets information
 printItemSet Header: prints the item-set header (banner)
 -will replace displayItemsetBanner
 
-printItemTabs: prints the Item-set tabs for Chung, Lind and Stereographs using info grabbed from getItemSet
+printNav: prints the Item-set navigation for Chung, Lind and Stereographs using info grabbed from getItemSet
 -will replace current printTabs
 -perhaps will use dropdown
 
 *******************************************************/
 
-//gets the item-set data from Omeka 
+//gets the item-set data from Omeka - needed to get collection (item-set) titles and IDS to print the navigation and banner
 async function getItemSetData(apiURL){
-
-  //there are specific headers we need to grab for total results in the response...this is just a note
-    response = await fetch(apiURL)
+    let response = await fetch(apiURL)
       .then(response => {
         return response.json();
       })
       .catch(error => {
         console.error('Error:', error);
       });  
-  
     
     console.log(response); //just to check the data 
     printNav(response);
 }
 
-
+//prints the dropdown collection selector
 function printNav (itemSetData){
+  //add the collection dropdown
   document.getElementById("collectionNav").innerHTML +=`
-  <label for="collection-select">Choose a collection:</label>
-  <select name="collection" id="collectionSelect"></select>
-
+  <label for="collectionSelect"></label>
+  <select name="collection" id="collectionSelect" aria-label="Select a Collection">
+  <option value="${startingItemSetID}" disabled selected >Select Collection</option>
+  </select>
+  <button onclick="collectionPicked()" id="collectionButton">Go</button>
   `
-
+  
+  //add the items to the dropdown
   for (var results=0; results<itemSetData.length; results++){
     
     itemSetTitle = itemSetData[results]?.['o:title'];
     itemSetImageURL = itemSetData[results]?.thumbnail_display_urls?.large;
     itemSetCollectionID = itemSetData[results]?.['o:id'];
-    console.log(itemSetTitle);
-    console.log(itemSetImageURL);
-    console.log(itemSetCollectionID);
-    document.getElementById("collectionSelect").innerHTML +=`
-    
-     
-      <option value=${itemSetTitle}>
+    document.getElementById("collectionSelect").innerHTML +=`   
+      <option value=${itemSetCollectionID}>
       ${itemSetTitle}
       </option>
     
-    
     `
+    
   }
+
+
 }
+
+function collectionPicked(){
+  collectionChosen = document.getElementById("collectionSelect");
+  console.log(collectionChosen.value);
+  window.location = window.location.origin + window.location.pathname + "?itemSetID=" +collectionChosen.value;
+}
+
 
 //the start of everything
 kickOff();  
 
 
-getItemSetData(item_set_url);
+
 
 
