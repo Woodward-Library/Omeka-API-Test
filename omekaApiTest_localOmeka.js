@@ -191,7 +191,7 @@ function printResults(dataBack){
 
           <div class="singleResult">
             <div class="resultImage">
-              <a href="${bigImage}"><img width="200px" height="200px" src="${itemImage}"></a>
+              <a href="${bigImage}"><img src="${itemImage}"></a>
             </div>
             <div id="resultInfo" class="resultInfo">
               <h2>${itemTitle}</h2>

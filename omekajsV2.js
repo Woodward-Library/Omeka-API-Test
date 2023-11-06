@@ -4,11 +4,11 @@
  * 
  * 
  * Requires: 
- *   HTML divs to be created: div id:"omekaContainer"
+ *   HTML div to be created: div id:"omekaContainer"
  *   Item Viewer (Universal viewer or Mirador to be loaded into separate page for Item Viewer functionality)
  * 
  * Issues:
- *   tabs are manually coded - requires new api request to dynamically create tabs from item-sets that exist in Omeka
+ *   tabs are manually coded (now hidden) - to improve, code requires new api request to dynamically create menu from item-sets that exist in Omeka
  *   see 'future functions' section
  *********************************************************************************************************************/
 
@@ -40,9 +40,9 @@ const defaultImage = "https://brand.ubc.ca/files/2018/09/Logos_1_2CrestDownload_
 
 //set Collection Banner images - in future - grab default collection image from Omeka so banners can be set from there
 let collectionBannerImage = ""; //default image
-const chungBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/08/taylors_Cropped.jpg";
+const chungBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/taylors_Croppedv2.jpg";
 const stereographsBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lanternSlideCropped.jpg";
-const lindBanner = "https://gallery.library.ubc.ca/files/2023/08/arc1820_cropped2-2048x1409.jpg";
+const lindBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lind_Cropped.jpg";
 
 /********************************************************************
  * End of setting Properties ^
@@ -61,7 +61,7 @@ function kickOff() {
       console.log(itemSetID);
     }
     buildHTML(); //build the HTML containers for Omeka items and results
-    displayItemSetBanner();
+    displayItemSetBanner(); //temporary - will be removed when future function printCurrentCollectionBanner is completed
     let apiURL = buildApiURL(itemSetID); //create the API url for the starting item set
     console.log(apiURL);
     getData(apiURL);  
@@ -118,7 +118,7 @@ function buildHTML(){
     <div id="collectionBackground"></div>
   </div>
   <div class="searchOmeka">
-    <div id="searchField"><p><input id="searchInput" aria-label="Search Collections"></input><button id="submitSearch">Search</button></p></div>
+    <div id="searchField"><input id="searchInput" aria-label="Search Collections"></input><button id="submitSearch">Search</button></div>
     <div id="collectionNav">
     </div>
   </div>
@@ -147,40 +147,13 @@ function arrayToObjectHelper(itemArray){
   return newObj;
 }
 
-//this function prints out the tabs to toggle between item sets - this is hardcoded to specific api urls...look into dynamically identifying item-sets in future?
-//can be removed if switch to dropdown
-function printTabs(){
-  //toggle for collections
-  let klondike = 31;
-  let chung = 11;
-  let slides= 534;
-  document.getElementById("tabs").innerHTML=`
-    <div id="collectionToggle">
-      <div class="toggleItem" onclick="clearSearchAndGet('${chung}'); displayItemSetBanner('Chung Collection', 11); ">Chung Collection</div>        
-      <div class="toggleItem" onclick="clearSearchAndGet('${klondike}'); displayItemSetBanner('Lind Collection', 31); ">Lind Collection</div>
-      <div class="toggleItem" onclick="clearSearchAndGet(${slides}); displayItemSetBanner('Stereographs and Glass Lantern slides', 534); ">Stereographs and Glass Lantern slides</div>
-    </div>
-  `;
-}
-
-//clear the search when user clicks tabs - if tabs are removed we can remove this function
-function clearSearchAndGet(theItemSetID){  
-    //if a tab is clicked we want to clear out any existing search value
-    document.getElementById('searchInput').value = null;
-    searchWord = null;
-    console.log(builtApiURL);
-    theApiURL = buildApiURL(theItemSetID);
-    console.log(theApiURL);
-    getData(theApiURL);
-}
-
 //this grabs the key/values of each Item and Prints them to the Results div...maybe this function does too much
 function printResults(dataBack){
 
   //clear any existing items in the results area
   document.getElementById("results").innerHTML=``;
   
-  printTabs();//print the tabs to toggle between item sets
+  //printTabs();//print the tabs to toggle between item sets (temporary disabled - kyle)
 
   //start defining each item and print to page
   for (var results=0; results<globalItemsPerPage; results++){
@@ -232,7 +205,7 @@ function printResults(dataBack){
 
           <div class="singleResult">
             <div class="resultImage">
-              <a href="${bigImage}"><img width="200px" height="200px" src="${itemImage}" alt="${itemTitle}"></a>
+              <a href="${bigImage}"><img src="${itemImage}" alt="${itemTitle}"></a>
             </div>
             <div class="resultInfo">
               <h2>${itemTitle}</h2>
@@ -296,7 +269,7 @@ async function searchResults(){
   getData(goSearch);
 }
 
-
+//possibly remove this function after finalizing printCurrentCollectionBanner
 function displayItemSetBanner(collectionName,theItemSetID){
   //check if itemsetID passed in tab
   if (theItemSetID){
@@ -304,15 +277,15 @@ function displayItemSetBanner(collectionName,theItemSetID){
   }
 
     if (itemSetID==11){
-        document.getElementById("collectionHeading").innerHTML = 'Chung Collection';
+        //document.getElementById("collectionHeading").innerHTML = 'Chung Collection';
         collectionBannerImage = chungBanner;
       }
       else if (itemSetID==534){
-        document.getElementById("collectionHeading").innerHTML = 'Stereographs and Glass Lantern slides';
+        //document.getElementById("collectionHeading").innerHTML = 'Stereographs and Glass Lantern slides';
         collectionBannerImage = stereographsBanner;
       }
       else if (itemSetID==31){
-        document.getElementById("collectionHeading").innerHTML = 'Lind Collection';
+        //document.getElementById("collectionHeading").innerHTML = 'Lind Collection';
         collectionBannerImage = lindBanner;
       }
       
@@ -358,13 +331,14 @@ async function getItemSetData(apiURL){
     
     console.log(response); //just to check the data 
     printNav(response);
+    printCurrentCollectionBanner(response);
 }
 
 //prints the dropdown collection selector
 function printNav (itemSetData){
-  //add the collection dropdown
+
+  //add the collection dropdown 
   document.getElementById("collectionNav").innerHTML +=`
-  <label for="collectionSelect"></label>
   <select name="collection" id="collectionSelect" aria-label="Select a Collection">
   <option value="${startingItemSetID}" disabled selected >Select Collection</option>
   </select>
@@ -374,26 +348,77 @@ function printNav (itemSetData){
   //add the items to the dropdown
   for (var results=0; results<itemSetData.length; results++){
     
-    itemSetTitle = itemSetData[results]?.['o:title'];
-    itemSetImageURL = itemSetData[results]?.thumbnail_display_urls?.large;
-    itemSetCollectionID = itemSetData[results]?.['o:id'];
+    let itemSetTitle = itemSetData[results]?.['o:title'];
+    let itemSetImageURL = itemSetData[results]?.thumbnail_display_urls?.large;
+    let itemSetCollectionID = itemSetData[results]?.['o:id'];
+
+    console.log(itemSetImageURL);
     document.getElementById("collectionSelect").innerHTML +=`   
       <option value=${itemSetCollectionID}>
       ${itemSetTitle}
       </option>
     
     `
-    
+
   }
 
 
 }
 
+//adds the collection switching function to the dropdown within the navigation
 function collectionPicked(){
-  collectionChosen = document.getElementById("collectionSelect");
-  console.log(collectionChosen.value);
+  let collectionChosen = document.getElementById("collectionSelect");
   window.location = window.location.origin + window.location.pathname + "?itemSetID=" +collectionChosen.value;
 }
+
+//use the URL param itemSetID to determine which Banner should be shown
+function printCurrentCollectionBanner(itemSetData){
+    //retrieve array of currently chosen collection
+    let convertedItemSetID = parseInt(itemSetID);
+    let result = itemSetData.find(item => item['o:id'] === convertedItemSetID);   
+    let foundTitle = result['o:title'];
+
+    //print the current banner to the banner div
+    document.getElementById("collectionHeading").innerHTML = `${foundTitle}`;
+}
+
+
+/*************************************
+ * 
+ * These functions were used to print tabs for each collection - will remove/delete
+ * 
+ * 
+ * 
+ *************************************/
+//this function prints out the tabs to toggle between item sets - this is hardcoded to specific api urls...look into dynamically identifying item-sets in future?
+//can be removed if switch to dropdown
+function printTabs(){
+    //toggle for collections
+    let klondike = 31;
+    let chung = 11;
+    let slides= 534;
+    document.getElementById("tabs").innerHTML=`
+      <div id="collectionToggle">
+        <div class="toggleItem" onclick="clearSearchAndGet('${chung}'); displayItemSetBanner('Chung Collection', 11); ">Chung Collection</div>        
+        <div class="toggleItem" onclick="clearSearchAndGet('${klondike}'); displayItemSetBanner('Lind Collection', 31); ">Lind Collection</div>
+        <div class="toggleItem" onclick="clearSearchAndGet(${slides}); displayItemSetBanner('Stereographs and Glass Lantern slides', 534); ">Stereographs and Glass Lantern slides</div>
+      </div>
+    `;
+  }
+  
+  //clear the search when user clicks tabs - if tabs are removed we can remove this function
+  function clearSearchAndGet(theItemSetID){  
+      //if a tab is clicked we want to clear out any existing search value
+      document.getElementById('searchInput').value = null;
+      searchWord = null;
+      console.log(builtApiURL);
+      theApiURL = buildApiURL(theItemSetID);
+      console.log(theApiURL);
+      getData(theApiURL);
+  }
+
+
+
 
 
 //the start of everything
