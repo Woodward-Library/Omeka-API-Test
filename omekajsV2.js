@@ -266,7 +266,11 @@ function printPagination(numberOfResults, builtURL){
 async function searchResults(){
   document.getElementById("results").innerHTML=`<p>Search Results</p>`
   goSearch = buildApiURL(); //build the API url to retrieve search results
-  getData(goSearch);
+  
+  //set itemSetId to Search (for unique search banner)
+  itemSetID = "search";
+  printCurrentCollectionBanner (itemSetData); //print the Search Banner using the Item-set data
+  getData(goSearch); //get the Search response
 }
 
 //possibly remove this function after finalizing printCurrentCollectionBanner
@@ -328,14 +332,15 @@ async function getItemSetData(apiURL){
       .catch(error => {
         console.error('Error:', error);
       });  
-    
-    console.log(response); //just to check the data 
+    itemSetData = response;
+    console.log(itemSetData); //just to check the data 
     printNav(response);
     printCurrentCollectionBanner(response);
+    return(itemSetData);
 }
 
 //prints the dropdown collection selector
-function printNav (itemSetData){
+function printNav (theItemSetData){
 
   //add the collection dropdown 
   document.getElementById("collectionNav").innerHTML +=`
@@ -346,11 +351,11 @@ function printNav (itemSetData){
   `
   
   //add the items to the dropdown
-  for (var results=0; results<itemSetData.length; results++){
+  for (var results=0; results<theItemSetData.length; results++){
     
-    let itemSetTitle = itemSetData[results]?.['o:title'];
-    let itemSetImageURL = itemSetData[results]?.thumbnail_display_urls?.large;
-    let itemSetCollectionID = itemSetData[results]?.['o:id'];
+    let itemSetTitle = theItemSetData[results]?.['o:title'];
+    let itemSetImageURL = theItemSetData[results]?.thumbnail_display_urls?.large;
+    let itemSetCollectionID = theItemSetData[results]?.['o:id'];
 
     console.log(itemSetImageURL);
     document.getElementById("collectionSelect").innerHTML +=`   
@@ -359,9 +364,7 @@ function printNav (itemSetData){
       </option>
     
     `
-
   }
-
 
 }
 
@@ -373,13 +376,20 @@ function collectionPicked(){
 
 //use the URL param itemSetID to determine which Banner should be shown
 function printCurrentCollectionBanner(itemSetData){
-    //retrieve array of currently chosen collection
-    let convertedItemSetID = parseInt(itemSetID);
-    let result = itemSetData.find(item => item['o:id'] === convertedItemSetID);   
-    let foundTitle = result['o:title'];
+    //check if Search was performed - if so display search banner
+    if (itemSetID==="search"){
+        document.getElementById("collectionHeading").innerHTML = `Search Results`;
 
-    //print the current banner to the banner div
-    document.getElementById("collectionHeading").innerHTML = `${foundTitle}`;
+    }
+    else{
+      //retrieve array of currently chosen collection
+      let convertedItemSetID = parseInt(itemSetID);
+      let result = itemSetData.find(item => item['o:id'] === convertedItemSetID);   
+      let foundTitle = result['o:title'];
+      console.log(itemSetID);
+      //print the current banner to the banner div
+      document.getElementById("collectionHeading").innerHTML = `${foundTitle}`;
+    }
 }
 
 
