@@ -330,12 +330,15 @@ printNav: prints the Item-set navigation for Chung, Lind and Stereographs using 
 
 //gets the item-set data from Omeka - needed to get collection (item-set) titles and IDS to print the navigation and banner
 async function getItemSetData(apiURL){
-    let response = await fetch(apiURL)
+  cleanApiUrl = DOMPurify.sanitize(apiURL);//sanitize apiUrl just in case...
+
+    let response = await fetch(cleanApiUrl)
       .then(response => {
         return response.json();
       })
       .catch(error => {
         console.error('Error:', error);
+        document.getElementById("errorContainer").innerHTML = `Sorry, unable to get Item-Set data.  Please try again later`
       });  
     itemSetData = response;
     console.log(itemSetData); //just to check the data 
