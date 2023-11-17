@@ -9,7 +9,7 @@
  *   DOMPurify - used to sanitize Search input and URL parameters (https://cdn.jsdelivr.net/gh/cure53/DOMPurify/dist/purify.js)
  * 
  * Issues:
- *   tabs are manually coded (now hidden) - to improve, code requires new api request to dynamically create menu from item-sets that exist in Omeka
+ *   tabs are manually coded (tabs are now hidden) - to improve, code requires new api request to dynamically create menu from item-sets that exist in Omeka
  *   see 'future functions' section
  *********************************************************************************************************************/
 
