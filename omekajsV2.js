@@ -5,7 +5,8 @@
  * 
  * Requires: 
  *   HTML div to be created: div id:"omekaContainer"
- *   Item Viewer (Universal viewer or Mirador to be loaded into separate page for Item Viewer functionality)
+ *   Item Viewer (Universal viewer or Mirador to be loaded into separate page for Item Viewer functionality - see itemPlayerURL)
+ *   DOMPurify - used to sanitize Search input and URL parameters (https://cdn.jsdelivr.net/gh/cure53/DOMPurify/dist/purify.js)
  * 
  * Issues:
  *   tabs are manually coded (now hidden) - to improve, code requires new api request to dynamically create menu from item-sets that exist in Omeka
@@ -23,7 +24,8 @@ const startingItemSetID="534"; //set starting Item Set ID to display on load if 
 
 /* get url params to load specific Item set into the results - ex: ?itemSetID=[item set ID in Omeka]*/
 let urlparams = new URL(window.location.toLocaleString());
-let itemSetID = urlparams.searchParams.get('itemSetID');
+let dirtyItemSetID = urlparams.searchParams.get('itemSetID');
+let itemSetID = DOMPurify.sanitize(dirtyItemSetID); //sanitize the URL parameter
 
 const base_url="https://omeka-dev.library.ubc.ca/api/"; //the Omeka Base API URL + item set id holder
 const search_url="https://omeka-dev.library.ubc.ca/api/items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
@@ -72,9 +74,9 @@ function kickOff() {
 //gets the item data from Omeka and send it to printResults
 //this function may need a better Error check!
 async function getData(apiURL){
-
+  cleanApiUrl = DOMPurify.sanitize(apiURL);//sanitize apiUrl just in case...
   //there are specific headers we need to grab for total results in the response...this is just a note
-    let response = await fetch(apiURL)
+    let response = await fetch(cleanApiUrl)
       .then(response => {
         console.log(...response.headers);  //the Omeka custom response headers (such as total results) are blocked by CORS - need to add special allowances in .htaccess...
         
@@ -85,20 +87,21 @@ async function getData(apiURL){
       })
       .catch(error => {
         console.error('Error:', error);
+        document.getElementById("errorContainer").innerHTML = `Sorry, unable to get data.  Please try again later`
       });  
     console.log(response); //just to check the data 
     printResults(response);  
-    printPagination(itemCount,apiURL);
+    printPagination(itemCount,cleanApiUrl);
 }
 
 // build the API URL string
 function buildApiURL (givenItemSetID){
       //check to see if there was a search value inputted, adjust the api url if exists
-      let searchWord = document.getElementById("searchInput").value;
-      console.log(searchWord);
+      let enteredSearchWord = document.getElementById("searchInput").value;
+      cleanedSearchWord = DOMPurify.sanitize(enteredSearchWord); //sanitize the entered Search words
       //determine if there is a search word, if not load the item set
-      if (searchWord) {
-        var builtApiURL = search_url+searchWord+perPageURL+pageURL;
+      if (enteredSearchWord) {
+        var builtApiURL = search_url+cleanedSearchWord+perPageURL+pageURL; //build the api url with the clean search words
         console.log("hello there is a search word");
         console.log(builtApiURL);
       }
@@ -112,6 +115,7 @@ function buildApiURL (givenItemSetID){
 //build the HTML container divs to load our Omeka content into
 function buildHTML(){
   document.getElementById("omekaContainer").innerHTML=`
+  
   <div id="collectionBannerContainer">
     <h1 id="collectionHeading"></h1>
     <div id="collectionClearCover"></div>
@@ -122,6 +126,7 @@ function buildHTML(){
     <div id="collectionNav">
     </div>
   </div>
+  <div id="errorContainer"></div>
   <div id="results">
   </div>
   <div id="pagination">

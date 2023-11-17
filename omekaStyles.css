@@ -156,3 +156,12 @@ div#collectionClearCover {
   width: 100%;
   opacity: 0.65;
 }
+
+div#errorContainer {
+  line-height: 45px;
+  background: #93b4af;
+  padding: 5px;
+  margin-top: 10px;
+  font-size: 20px;
+  text-align: center;
+}
