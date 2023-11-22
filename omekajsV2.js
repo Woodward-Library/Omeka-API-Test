@@ -24,18 +24,20 @@ const startingItemSetID="534"; //set starting Item Set ID to display on load if 
 
 /* get url params to load specific Item set into the results - ex: ?itemSetID=[item set ID in Omeka]*/
 let urlparams = new URL(window.location.toLocaleString());
-let dirtyItemSetID = urlparams.searchParams.get('itemSetID');
-let itemSetID = DOMPurify.sanitize(dirtyItemSetID); //sanitize the URL parameter
+let ogItemSetID = urlparams.searchParams.get('itemSetID');
+let itemSetID = DOMPurify.sanitize(ogItemSetID); //sanitize the URL parameter
 
 const base_url="https://omeka-dev.library.ubc.ca/api/"; //the Omeka Base API URL + item set id holder
 const search_url="https://omeka-dev.library.ubc.ca/api/items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
 const itemPlayerURL="https://gallery.library.ubc.ca/viewer/?itemID=";  //URL to where an instance of Mirador/Universal viewer is located, pass the itemID with URL params; build manifest URL within that location
 const item_url= base_url + "items?item_set_id=";
-const item_set_url = base_url + "item_sets"
+const item_set_url = base_url + "item_sets";
 
 const globalItemsPerPage = 25;  //set number of Items per page inital load
 const perPageURL = "&per_page="+globalItemsPerPage; //creating the url segment to set items per page
-const pageURL = "&page=" //specific page number to be added in pagination function
+const pageURL = "&page="; //specific page number to be added in pagination function
+
+const errorText = 'Sorry, unable to get data.  Please try again later'; //set error text shown when unable to retrieve data from Omeka
 
 //set default item image if no item image is found
 const defaultImage = "https://brand.ubc.ca/files/2018/09/Logos_1_2CrestDownload_768px.jpg";
@@ -87,7 +89,7 @@ async function getData(apiURL){
       })
       .catch(error => {
         console.error('Error:', error);
-        document.getElementById("errorContainer").innerHTML = `Sorry, unable to get data.  Please try again later`
+        showErrorMessage(errorText);
       });  
     console.log(response); //just to check the data 
     printResults(response);  
@@ -98,7 +100,10 @@ async function getData(apiURL){
 function buildApiURL (givenItemSetID){
       //check to see if there was a search value inputted, adjust the api url if exists
       let enteredSearchWord = document.getElementById("searchInput").value;
-      cleanedSearchWord = DOMPurify.sanitize(enteredSearchWord); //sanitize the entered Search words
+      
+      //sanitize the entered Search words
+      cleanedSearchWord = DOMPurify.sanitize(enteredSearchWord); 
+      
       //determine if there is a search word, if not load the item set
       if (enteredSearchWord) {
         var builtApiURL = search_url+cleanedSearchWord+perPageURL+pageURL; //build the api url with the clean search words
@@ -305,6 +310,12 @@ function displayItemSetBanner(collectionName,theItemSetID){
     
     document.getElementById("collectionBackground").innerHTML = `<img src="${collectionBannerImage}"></img>`;
     
+}
+
+//displays an error message to user if data is unable to be retrieved from Omeka-S
+function showErrorMessage(text){
+    document.getElementById("errorContainer").style.display = "block";
+    document.getElementById("errorContainer").innerHTML = `${text}`;
 }
 
 /***********************************************

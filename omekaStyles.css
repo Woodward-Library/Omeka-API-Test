@@ -164,4 +164,5 @@ div#errorContainer {
   margin-top: 10px;
   font-size: 20px;
   text-align: center;
+  display: none;
 }
