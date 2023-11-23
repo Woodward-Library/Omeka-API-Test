@@ -20,12 +20,11 @@
  * 
  ********************************************************************/
 
-const startingItemSetID="534"; //set starting Item Set ID to display on load if none given
+const startingItemSetID="11"; //set starting Item Set ID to display on load if none given
 
 /* get url params to load specific Item set into the results - ex: ?itemSetID=[item set ID in Omeka]*/
 let urlparams = new URL(window.location.toLocaleString());
-let ogItemSetID = urlparams.searchParams.get('itemSetID');
-let itemSetID = DOMPurify.sanitize(ogItemSetID); //sanitize the URL parameter
+let itemSetID = urlparams.searchParams.get('itemSetID'); //santized in kickOff
 
 const base_url="https://omeka-dev.library.ubc.ca/api/"; //the Omeka Base API URL + item set id holder
 const search_url="https://omeka-dev.library.ubc.ca/api/items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
@@ -58,42 +57,59 @@ const lindBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023
 
 
 //checks if an itemSetID was given in URL params - if none given, use the preferred default itemSet by sending the itemsetID to getData
-function kickOff() {
-    
-    if (itemSetID==null) {
-      itemSetID = startingItemSetID; //if no itemSet is given in URL, display starting Item SetID
-      console.log(itemSetID);
+async function kickOff() {
+    cleanItemSetID = await sanitize(itemSetID); //sanitize the itemSetID since it could be defined in URL params
+    console.log(cleanItemSetID);
+    if (cleanItemSetID==="") {
+      cleanItemSetID = startingItemSetID; //if no itemSet is given in URL, display starting Item SetID
+      console.log(cleanItemSetID);
     }
+
     buildHTML(); //build the HTML containers for Omeka items and results
     displayItemSetBanner(); //temporary - will be removed when future function printCurrentCollectionBanner is completed
-    let apiURL = buildApiURL(itemSetID); //create the API url for the starting item set
+    let apiURL = buildApiURL(cleanItemSetID); //create the API url for the starting item set
     console.log(apiURL);
     getData(apiURL);  
     getItemSetData(item_set_url); //for getting the collection item-set information
+    return cleanItemSetID;
+}
+
+//sanitize inputs with DOMPurify, await the result and return the clean value
+async function sanitize(dirtyValue){
+  try {
+    let cleanValue = await DOMPurify.sanitize(dirtyValue);
+    return cleanValue;
+  }
+  catch (error){
+    console.log("Error sanitizing data with DOMPurify",error);
+    return Promise.reject(error); 
+  } 
 }
 
 
 //gets the item data from Omeka and send it to printResults
-//this function may need a better Error check!
 async function getData(apiURL){
-  cleanApiUrl = DOMPurify.sanitize(apiURL);//sanitize apiUrl just in case...
-  //there are specific headers we need to grab for total results in the response...this is just a note
-    let response = await fetch(cleanApiUrl)
-      .then(response => {
-        console.log(...response.headers);  //the Omeka custom response headers (such as total results) are blocked by CORS - need to add special allowances in .htaccess...
-        
-        itemCount = response.headers.get('omeka-s-total-results'); //get the total results - we need this for pagination later
-        console.log (itemCount);  
+    try {
+      let cleanApiUrl = await sanitize(apiURL); // Sanitize the apiUrl just in case...
+      
+      // There are specific headers we need to grab for total results in the response... this is just a note
+      let response = await fetch(cleanApiUrl);
+      console.log(...response.headers);  //the Omeka custom response headers (such as total results) are blocked by CORS - need to add special allowances in .htaccess...
+      const itemCount = response.headers.get('omeka-s-total-results'); //get the total results - we need this for pagination later
+      console.log(itemCount);
+  
+      let responseData = await response.json();
+      console.log(responseData); //just to check the data
+      printResults(responseData);
+      printPagination(itemCount, cleanApiUrl);
+    } 
+    catch (error) {
+      console.error('Error during getData:', error);
+      showErrorMessage(errorText);
+    }
 
-        return response.json();
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        showErrorMessage(errorText);
-      });  
-    console.log(response); //just to check the data 
-    printResults(response);  
-    printPagination(itemCount,cleanApiUrl);
+
+
 }
 
 // build the API URL string
@@ -252,6 +268,7 @@ function printPagination(numberOfResults, builtURL){
   //fix to 'sanitize' builtapi url to remove any page numbers passed when this loops more than once
   let findURLEnd = "&page=";
   let cleanBuiltURL = builtURL.slice(0,builtURL.lastIndexOf(findURLEnd))+"&page="; 
+  console.log(builtURL);
   console.log(cleanBuiltURL);
 
   //clear out any existing page numbers
@@ -290,15 +307,15 @@ function displayItemSetBanner(collectionName,theItemSetID){
     itemSetID = theItemSetID;
   }
 
-    if (itemSetID==11){
+    if (cleanItemSetID==11){
         //document.getElementById("collectionHeading").innerHTML = 'Chung Collection';
         collectionBannerImage = chungBanner;
       }
-      else if (itemSetID==534){
+      else if (cleanItemSetID==534){
         //document.getElementById("collectionHeading").innerHTML = 'Stereographs and Glass Lantern slides';
         collectionBannerImage = stereographsBanner;
       }
-      else if (itemSetID==31){
+      else if (cleanItemSetID==31){
         //document.getElementById("collectionHeading").innerHTML = 'Lind Collection';
         collectionBannerImage = lindBanner;
       }
@@ -396,55 +413,28 @@ function collectionPicked(){
 //use the URL param itemSetID to determine which Banner should be shown
 function printCurrentCollectionBanner(itemSetData){
     //check if Search was performed - if so display search banner
+    console.log(itemSetID);
+    console.log(cleanItemSetID);
     if (itemSetID==="search"){
         document.getElementById("collectionHeading").innerHTML = `Search Results`;
-
+    }
+    //else check for blank (no item set ID)
+    else if (cleanItemSetID===""){
+      console.log("Item set id is blank");
     }
     else{
       //retrieve array of currently chosen collection
-      let convertedItemSetID = parseInt(itemSetID);
+      let convertedItemSetID = parseInt(cleanItemSetID);
       let result = itemSetData.find(item => item['o:id'] === convertedItemSetID);   
       let foundTitle = result['o:title'];
-      console.log(itemSetID);
+      
       //print the current banner to the banner div
       document.getElementById("collectionHeading").innerHTML = `${foundTitle}`;
     }
 }
 
 
-/*************************************
- * 
- * These functions were used to print tabs for each collection - will remove/delete
- * 
- * 
- * 
- *************************************/
-//this function prints out the tabs to toggle between item sets - this is hardcoded to specific api urls...look into dynamically identifying item-sets in future?
-//can be removed if switch to dropdown
-function printTabs(){
-    //toggle for collections
-    let klondike = 31;
-    let chung = 11;
-    let slides= 534;
-    document.getElementById("tabs").innerHTML=`
-      <div id="collectionToggle">
-        <div class="toggleItem" onclick="clearSearchAndGet('${chung}'); displayItemSetBanner('Chung Collection', 11); ">Chung Collection</div>        
-        <div class="toggleItem" onclick="clearSearchAndGet('${klondike}'); displayItemSetBanner('Lind Collection', 31); ">Lind Collection</div>
-        <div class="toggleItem" onclick="clearSearchAndGet(${slides}); displayItemSetBanner('Stereographs and Glass Lantern slides', 534); ">Stereographs and Glass Lantern slides</div>
-      </div>
-    `;
-  }
-  
-  //clear the search when user clicks tabs - if tabs are removed we can remove this function
-  function clearSearchAndGet(theItemSetID){  
-      //if a tab is clicked we want to clear out any existing search value
-      document.getElementById('searchInput').value = null;
-      searchWord = null;
-      console.log(builtApiURL);
-      theApiURL = buildApiURL(theItemSetID);
-      console.log(theApiURL);
-      getData(theApiURL);
-  }
+
 
 
 
