@@ -9,7 +9,7 @@
  *   DOMPurify - used to sanitize Search input and URL parameters (https://cdn.jsdelivr.net/gh/cure53/DOMPurify/dist/purify.js)
  * 
  * Issues:
- *   tabs are manually coded (tabs are now hidden) - to improve, code requires new api request to dynamically create menu from item-sets that exist in Omeka
+ *   tabs are manually coded (tabs are now removed - nov 23 2023) - to improve, code requires new api request to dynamically create menu from item-sets that exist in Omeka
  *   see 'future functions' section
  *********************************************************************************************************************/
 
@@ -47,6 +47,12 @@ const chungBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/202
 const stereographsBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lanternSlideCropped.jpg";
 const lindBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lind_Cropped.jpg";
 
+//variables for rate limiting
+let requestCounter = 0;
+let lastRequested = 0;
+const maxRequestPerMinute = 2;//how many times data from Omeka can be requested per minute
+
+
 /********************************************************************
  * End of setting Properties ^
  * ******************************************************************
@@ -67,7 +73,7 @@ async function kickOff() {
 
     buildHTML(); //build the HTML containers for Omeka items and results
     displayItemSetBanner(); //temporary - will be removed when future function printCurrentCollectionBanner is completed
-    let apiURL = buildApiURL(cleanItemSetID); //create the API url for the starting item set
+    let apiURL = await buildApiURL(cleanItemSetID); //create the API url for the starting item set
     console.log(apiURL);
     getData(apiURL);  
     getItemSetData(item_set_url); //for getting the collection item-set information
@@ -89,36 +95,56 @@ async function sanitize(dirtyValue){
 
 //gets the item data from Omeka and send it to printResults
 async function getData(apiURL){
-    try {
-      let cleanApiUrl = await sanitize(apiURL); // Sanitize the apiUrl just in case...
+  //rate limiting chunk of code
+  const currentTime = Date.now();
+    // Check if the number of requests exceeds the limit in a minute
+    if (requestCounter >= maxRequestPerMinute && currentTime - lastRequested < 60000) {
+      console.log('Rate limit exceeded. Please wait before making more requests.');
+      //showErrorMessage(errorText);
+      return;
+    }
+  
+    // Reset the counter and update the timestamp if a minute has passed
+    if (currentTime - lastRequested >= 60000) {
+      requestCounter = 0;
+      lastRequested = currentTime;
+    }
+  
+    // Increment the request counter
+    requestCounter++;
+
+  //get the Omeka data
+  try {
+    let cleanApiUrl = await sanitize(apiURL); // Sanitize the apiUrl just in case...
       
       // There are specific headers we need to grab for total results in the response... this is just a note
-      let response = await fetch(cleanApiUrl);
-      console.log(...response.headers);  //the Omeka custom response headers (such as total results) are blocked by CORS - need to add special allowances in .htaccess...
-      const itemCount = response.headers.get('omeka-s-total-results'); //get the total results - we need this for pagination later
-      console.log(itemCount);
+    let response = await fetch(cleanApiUrl);
+    console.log(...response.headers);  //the Omeka custom response headers (such as total results) are blocked by CORS - need to add special allowances in .htaccess...
+    const itemCount = response.headers.get('omeka-s-total-results'); //get the total results - we need this for pagination later
+    console.log(itemCount);
   
-      let responseData = await response.json();
-      console.log(responseData); //just to check the data
-      printResults(responseData);
-      printPagination(itemCount, cleanApiUrl);
-    } 
-    catch (error) {
-      console.error('Error during getData:', error);
-      showErrorMessage(errorText);
-    }
-
-
+    let responseData = await response.json();
+    console.log(responseData); //just to check the data
+    printResults(responseData);
+    printPagination(itemCount, cleanApiUrl);
+  } 
+  catch (error) {
+    console.error('Error during getData:', error);
+    showErrorMessage(errorText);
+  }
+  
+  //move focus to top of page 
+  window.scroll(0,0);
 
 }
 
 // build the API URL string
-function buildApiURL (givenItemSetID){
+async function buildApiURL (givenItemSetID){
       //check to see if there was a search value inputted, adjust the api url if exists
       let enteredSearchWord = document.getElementById("searchInput").value;
       
       //sanitize the entered Search words
-      cleanedSearchWord = DOMPurify.sanitize(enteredSearchWord); 
+      cleanedSearchWord =  await sanitize(enteredSearchWord); 
       
       //determine if there is a search word, if not load the item set
       if (enteredSearchWord) {
@@ -292,7 +318,7 @@ function printPagination(numberOfResults, builtURL){
 //clear any existing Search info and display the Search Results
 async function searchResults(){
   document.getElementById("results").innerHTML=`<p>Search Results</p>`
-  goSearch = buildApiURL(); //build the API url to retrieve search results
+  goSearch = await buildApiURL(); //build the API url to retrieve search results
   
   //set itemSetId to Search (for unique search banner)
   itemSetID = "search";
