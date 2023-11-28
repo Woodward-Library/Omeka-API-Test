@@ -6,7 +6,7 @@
  * Requires: 
  *   HTML div to be created: div id:"omekaContainer"
  *   Item Viewer (Universal viewer or Mirador to be loaded into separate page for Item Viewer functionality - see itemPlayerURL)
- *   DOMPurify - used to sanitize Search input and URL parameters (https://cdn.jsdelivr.net/gh/cure53/DOMPurify/dist/purify.js)
+ *   DOMPurify - used to sanitize Search input and URL parameters (https://cdn.jsdelivr.net/gh/cure53/DOMPurify/dist/purify.js) - loaded within HTML 
  * 
  * Issues:
  *   tabs are manually coded (tabs are now removed - nov 23 2023) - to improve, code requires new api request to dynamically create menu from item-sets that exist in Omeka
@@ -20,14 +20,11 @@
  * 
  ********************************************************************/
 
-const startingItemSetID="11"; //set starting Item Set ID to display on load if none given
-
-/* get url params to load specific Item set into the results - ex: ?itemSetID=[item set ID in Omeka]*/
-let urlparams = new URL(window.location.toLocaleString());
-let itemSetID = urlparams.searchParams.get('itemSetID'); //santized in kickOff
+const startingItemSetID = "11"; //set starting Item Set ID to display on load if none given
+let cleanedItemSetID; //to hold the itemSetID after sanitization
 
 const base_url="https://omeka-dev.library.ubc.ca/api/"; //the Omeka Base API URL + item set id holder
-const search_url="https://omeka-dev.library.ubc.ca/api/items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
+const search_url= base_url + "items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
 const itemPlayerURL="https://gallery.library.ubc.ca/viewer/?itemID=";  //URL to where an instance of Mirador/Universal viewer is located, pass the itemID with URL params; build manifest URL within that location
 const item_url= base_url + "items?item_set_id=";
 const item_set_url = base_url + "item_sets";
@@ -47,10 +44,8 @@ const chungBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/202
 const stereographsBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lanternSlideCropped.jpg";
 const lindBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lind_Cropped.jpg";
 
-//variables for rate limiting
-let requestCounter = 0;
-let lastRequested = 0;
-const maxRequestPerMinute = 2;//how many times data from Omeka can be requested per minute
+//Set Max Requests per Minute for rate limiting
+const maxRequestPerMinute = 5;//how many times data from Omeka can be requested per minute
 
 
 /********************************************************************
@@ -62,23 +57,31 @@ const maxRequestPerMinute = 2;//how many times data from Omeka can be requested 
  ********************************************************************/
 
 
-//checks if an itemSetID was given in URL params - if none given, use the preferred default itemSet by sending the itemsetID to getData
+//starts everything off - checks if an itemSetID was given in URL params - if none given, use the preferred default itemSet by sending the itemsetID to getData
 async function kickOff() {
-    cleanItemSetID = await sanitize(itemSetID); //sanitize the itemSetID since it could be defined in URL params
-    console.log(cleanItemSetID);
-    if (cleanItemSetID==="") {
-      cleanItemSetID = startingItemSetID; //if no itemSet is given in URL, display starting Item SetID
-      console.log(cleanItemSetID);
-    }
-
+    let cleanItemSetID = await getItemSetID(); //get (or set) the item set id and sanitize it
     buildHTML(); //build the HTML containers for Omeka items and results
-    displayItemSetBanner(); //temporary - will be removed when future function printCurrentCollectionBanner is completed
+    displayItemSetBanner(cleanItemSetID); //temporary - will be removed when future function printCurrentCollectionBanner is completed
     let apiURL = await buildApiURL(cleanItemSetID); //create the API url for the starting item set
     console.log(apiURL);
     getData(apiURL);  
     getItemSetData(item_set_url); //for getting the collection item-set information
-    return cleanItemSetID;
 }
+
+//gets and returns the starting item set ID to load in kickoff
+async function getItemSetID(){
+  let urlparams = new URL(window.location.toLocaleString());  /* get url params to load specific Item set into the results - ex: ?itemSetID=[item set ID in Omeka]*/
+  let itemSetID = urlparams.searchParams.get('itemSetID'); //santized in kickOff
+  cleanedItemSetID = await sanitize(itemSetID); //sets a global variable - sanitize the itemSetID since it could be defined in URL params
+  //check for no Item Set ID given in Url params
+  if (cleanedItemSetID==="") {
+    cleanedItemSetID = startingItemSetID; //if no itemSet is given in URL, display starting Item SetID
+    console.log(cleanedItemSetID);
+  }
+
+  return cleanedItemSetID;
+}
+
 
 //sanitize inputs with DOMPurify, await the result and return the clean value
 async function sanitize(dirtyValue){
@@ -93,62 +96,47 @@ async function sanitize(dirtyValue){
 }
 
 
+
 //gets the item data from Omeka and send it to printResults
 async function getData(apiURL){
-  //rate limiting chunk of code
-  const currentTime = Date.now();
-    // Check if the number of requests exceeds the limit in a minute
-    if (requestCounter >= maxRequestPerMinute && currentTime - lastRequested < 60000) {
-      console.log('Rate limit exceeded. Please wait before making more requests.');
-      //showErrorMessage(errorText);
-      return;
-    }
-  
-    // Reset the counter and update the timestamp if a minute has passed
-    if (currentTime - lastRequested >= 60000) {
-      requestCounter = 0;
-      lastRequested = currentTime;
-    }
-  
-    // Increment the request counter
-    requestCounter++;
+  //before getting the data, run the rate limiting function - returns false if limit exceeded
+  var rateLimitCheck = checkLimit(); 
+  if (rateLimitCheck==false){    
+    return; //stop getData if the rate has been exceeded
+  }
 
-  //get the Omeka data
+  //get the Omeka data and catch any errors
   try {
-    let cleanApiUrl = await sanitize(apiURL); // Sanitize the apiUrl just in case...
-      
-      // There are specific headers we need to grab for total results in the response... this is just a note
+    let cleanApiUrl = await sanitize(apiURL); // Sanitize the apiUrl just in case...   
     let response = await fetch(cleanApiUrl);
-    console.log(...response.headers);  //the Omeka custom response headers (such as total results) are blocked by CORS - need to add special allowances in .htaccess...
+    let responseData = await response.json(); //turn response into json
+
+    console.log(...response.headers);  //the Omeka custom response headers (such as total results) are blocked by CORS - need to add special allowances in .htaccess...need headers for total results returned
     const itemCount = response.headers.get('omeka-s-total-results'); //get the total results - we need this for pagination later
     console.log(itemCount);
   
-    let responseData = await response.json();
     console.log(responseData); //just to check the data
-    printResults(responseData);
-    printPagination(itemCount, cleanApiUrl);
+    printResults(responseData); //print the results to the page
+    printPagination(itemCount, cleanApiUrl); //determine and print the pagination
   } 
   catch (error) {
     console.error('Error during getData:', error);
-    showErrorMessage(errorText);
+    showErrorMessage(errorText); //
   }
-  
-  //move focus to top of page 
-  window.scroll(0,0);
-
+  window.scroll(0,0);   //move focus to top of page 
 }
 
 // build the API URL string
 async function buildApiURL (givenItemSetID){
       //check to see if there was a search value inputted, adjust the api url if exists
-      let enteredSearchWord = document.getElementById("searchInput").value;
+      let enteredSearchWords = document.getElementById("searchInput").value;
       
       //sanitize the entered Search words
-      cleanedSearchWord =  await sanitize(enteredSearchWord); 
+      cleanedSearchWords =  await sanitize(enteredSearchWords); 
       
       //determine if there is a search word, if not load the item set
-      if (enteredSearchWord) {
-        var builtApiURL = search_url+cleanedSearchWord+perPageURL+pageURL; //build the api url with the clean search words
+      if (enteredSearchWords) {
+        var builtApiURL = search_url+cleanedSearchWords+perPageURL+pageURL; //build the api url with the clean search words
         console.log("hello there is a search word");
         console.log(builtApiURL);
       }
@@ -204,8 +192,6 @@ function printResults(dataBack){
 
   //clear any existing items in the results area
   document.getElementById("results").innerHTML=``;
-  
-  //printTabs();//print the tabs to toggle between item sets (temporary disabled - kyle)
 
   //start defining each item and print to page
   for (var results=0; results<globalItemsPerPage; results++){
@@ -215,8 +201,7 @@ function printResults(dataBack){
       
      //if the item has a title - continue grabbing and printing the item details 
      //grab item details if the details exist using Optional Chaining - writing this here to remind myself
-     if (itemTitle){ 
-           
+     if (itemTitle){            
         let itemDescription = (dataBack[results]?.['dcterms:description']?.[0]?.['@value']);
         //check if no item description
         if (itemDescription==null){
@@ -236,25 +221,15 @@ function printResults(dataBack){
           }
 
         let itemType = itemTypeObj?.dctype;
-        console.log(itemType); 
-
-
-        
         let bigImage = dataBack[results]?.thumbnail_display_urls.large;
-        let itemID = dataBack[results]?.['o:id'];
-        
+        let itemID = dataBack[results]?.['o:id'];      
         let itemIdentifier = dataBack[results]?.['dcterms:identifier']?.[0]?.['@value'];
-
         let itemPartOf = dataBack[results]?.['dcterms:isPartOf']?.[0]?.['@value'];
-
         let itemDate = dataBack[results]?.['dcterms:date']?.[0]?.['@value'];
         let itemSet = dataBack[results]?.['o:item_set']?.[0]?.['o:id'];
         
-        let itemMedia = dataBack[results]?.['o:media'];
-        
         //print the Item to the page
         document.getElementById("results").innerHTML+=`
-
           <div class="singleResult">
             <div class="resultImage">
               <a href="${bigImage}"><img src="${itemImage}" alt="${itemTitle}"></a>
@@ -321,19 +296,14 @@ async function searchResults(){
   goSearch = await buildApiURL(); //build the API url to retrieve search results
   
   //set itemSetId to Search (for unique search banner)
-  itemSetID = "search";
+  cleanedItemSetID = "search";
   printCurrentCollectionBanner (itemSetData); //print the Search Banner using the Item-set data
   getData(goSearch); //get the Search response
 }
 
 //possibly remove this function after finalizing printCurrentCollectionBanner
-function displayItemSetBanner(collectionName,theItemSetID){
-  //check if itemsetID passed in tab
-  if (theItemSetID){
-    itemSetID = theItemSetID;
-  }
-
-    if (cleanItemSetID==11){
+function displayItemSetBanner(cleanItemSetID){
+      if (cleanItemSetID==11){
         //document.getElementById("collectionHeading").innerHTML = 'Chung Collection';
         collectionBannerImage = chungBanner;
       }
@@ -345,20 +315,18 @@ function displayItemSetBanner(collectionName,theItemSetID){
         //document.getElementById("collectionHeading").innerHTML = 'Lind Collection';
         collectionBannerImage = lindBanner;
       }
-      
-    if (collectionName){  
-      document.getElementById("collectionHeading").innerHTML = collectionName;
-      
-    }
-    
-    document.getElementById("collectionBackground").innerHTML = `<img src="${collectionBannerImage}"></img>`;
-    
+    document.getElementById("collectionBackground").innerHTML = `<img src="${collectionBannerImage}"></img>`; 
 }
 
 //displays an error message to user if data is unable to be retrieved from Omeka-S
 function showErrorMessage(text){
     document.getElementById("errorContainer").style.display = "block";
     document.getElementById("errorContainer").innerHTML = `${text}`;
+}
+
+//hides the error message to user 
+function hideErrorMessage(text){
+  document.getElementById("errorContainer").style.display = "none";  
 }
 
 /***********************************************
@@ -384,8 +352,8 @@ printNav: prints the Item-set navigation for Chung, Lind and Stereographs using 
 
 //gets the item-set data from Omeka - needed to get collection (item-set) titles and IDS to print the navigation and banner
 async function getItemSetData(apiURL){
-  cleanApiUrl = DOMPurify.sanitize(apiURL);//sanitize apiUrl just in case...
-
+  cleanApiUrl = await sanitize(apiURL);//sanitize apiUrl just in case...
+  console.log("clean api url from getItemSetData",cleanApiUrl)
     let response = await fetch(cleanApiUrl)
       .then(response => {
         return response.json();
@@ -439,18 +407,14 @@ function collectionPicked(){
 //use the URL param itemSetID to determine which Banner should be shown
 function printCurrentCollectionBanner(itemSetData){
     //check if Search was performed - if so display search banner
-    console.log(itemSetID);
-    console.log(cleanItemSetID);
-    if (itemSetID==="search"){
+    
+    console.log("printcurrentcollban itemsetID",cleanedItemSetID);
+    if (cleanedItemSetID==="search"){
         document.getElementById("collectionHeading").innerHTML = `Search Results`;
-    }
-    //else check for blank (no item set ID)
-    else if (cleanItemSetID===""){
-      console.log("Item set id is blank");
     }
     else{
       //retrieve array of currently chosen collection
-      let convertedItemSetID = parseInt(cleanItemSetID);
+      let convertedItemSetID = parseInt(cleanedItemSetID);
       let result = itemSetData.find(item => item['o:id'] === convertedItemSetID);   
       let foundTitle = result['o:title'];
       
@@ -459,11 +423,49 @@ function printCurrentCollectionBanner(itemSetData){
     }
 }
 
+//function for rate limiting
+function checkLimit(){
+  const currentTime = Date.now();
+  const a_Minute = 60000; //one minute is 60000 in this world
+  const storedLastTime = parseInt(sessionStorage.getItem("lastRequestedTime")) || 0; //get the stored last recorded time or set it to 0 initially
+  let currentIteration = parseInt(sessionStorage.getItem("storedCounter")) || 0; //get the current iteration or set it to 0 initially
+
+  console.log(currentTime - storedLastTime);
+  console.log(storedLastTime);
+
+  // Reset the counter, Session Storage and update the timestamp IF elapsed time has been over a minute - OR this if first run currentTIme will always be greater than a minute in value
+  if (currentTime - storedLastTime >= a_Minute) {
+    
+    console.log("hey it's been a minute")
+    
+    sessionStorage.setItem("storedCounter","1"); //set sessionStorage
+    console.log("session storage value of the stored counter has been reset to:",sessionStorage.getItem("storedCounter"));
+    console.log("current time is", currentTime);
+    
+    sessionStorage.setItem("lastRequestedTime",currentTime);
+    console.log("last requested time is now:",sessionStorage.getItem('lastRequestedTime'));
+
+    hideErrorMessage(); //removes the error rate limit message to user
+
+  }
+
+  //update iteration and store the value
+  if (currentTime - storedLastTime < a_Minute){
+    //theCurrentIteration = parseInt(currentIteration);
+    currentIteration++;
+    sessionStorage.setItem("storedCounter",currentIteration);
+    console.log(currentIteration);
+  }
+
+  // Check if the number of requests exceeds the limit in a minute
+  if (currentIteration >= maxRequestPerMinute && currentTime - storedLastTime < a_Minute) {
+    console.log('Rate limit exceeded...time out for 1 minute');
+    showErrorMessage("Rate limit exceeded. Please wait before making more requests.");
+    return false;
+  }
 
 
-
-
-
+}
 
 
 //the start of everything
