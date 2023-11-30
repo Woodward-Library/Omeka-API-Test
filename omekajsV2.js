@@ -9,7 +9,7 @@
  *   DOMPurify - used to sanitize Search input and URL parameters (https://cdn.jsdelivr.net/gh/cure53/DOMPurify/dist/purify.js) - loaded within HTML 
  * 
  * Issues:
- *   tabs are manually coded (tabs are now removed - nov 23 2023) - to improve, code requires new api request to dynamically create menu from item-sets that exist in Omeka
+ *   banner images are manually defined in displayItemSetBanner - in future, banner images can be pulled from Omeka and displayed via the function printCurrentCollectionBanner
  *   see 'future functions' section
  *********************************************************************************************************************/
 
@@ -24,10 +24,10 @@ const startingItemSetID = "11"; //set starting Item Set ID to display on load if
 let cleanedItemSetID; //to hold the itemSetID after sanitization
 
 const base_url="https://omeka-dev.library.ubc.ca/api/"; //the Omeka Base API URL + item set id holder
-const search_url= base_url + "items?fulltext_search=" //the Omeka Search API URL string - needed for any Search requests
+const search_url= base_url + "items?fulltext_search=" //build the Omeka Search API URL string - needed for any Search requests
 const itemPlayerURL="https://gallery.library.ubc.ca/viewer/?itemID=";  //URL to where an instance of Mirador/Universal viewer is located, pass the itemID with URL params; build manifest URL within that location
-const item_url= base_url + "items?item_set_id=";
-const item_set_url = base_url + "item_sets";
+const item_url= base_url + "items?item_set_id="; //build the Omeka API URL for items within a given item set ID
+const item_set_url = base_url + "item_sets"; //build the Omeka API URL to return information on the Item Sets
 
 const globalItemsPerPage = 25;  //set number of Items per page inital load
 const perPageURL = "&per_page="+globalItemsPerPage; //creating the url segment to set items per page
@@ -39,7 +39,7 @@ const errorText = 'Sorry, unable to get data.  Please try again later'; //set er
 const defaultImage = "https://brand.ubc.ca/files/2018/09/Logos_1_2CrestDownload_768px.jpg";
 
 //set Collection Banner images - in future - grab default collection image from Omeka so banners can be set from there
-let collectionBannerImage = ""; //default image
+const collectionBannerDefaultImage = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/empressOfAsiaBannerResults.jpg"; //default image
 const chungBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/taylors_Croppedv2.jpg";
 const stereographsBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lanternSlideCropped.jpg";
 const lindBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lind_Cropped.jpg";
@@ -71,7 +71,7 @@ async function kickOff() {
 //gets and returns the starting item set ID to load in kickoff
 async function getItemSetID(){
   let urlparams = new URL(window.location.toLocaleString());  /* get url params to load specific Item set into the results - ex: ?itemSetID=[item set ID in Omeka]*/
-  let itemSetID = urlparams.searchParams.get('itemSetID'); //santized in kickOff
+  let itemSetID = urlparams.searchParams.get('itemSetID'); 
   cleanedItemSetID = await sanitize(itemSetID); //sets a global variable - sanitize the itemSetID since it could be defined in URL params
   //check for no Item Set ID given in Url params
   if (cleanedItemSetID==="") {
@@ -107,8 +107,8 @@ async function getData(apiURL){
 
   //get the Omeka data and catch any errors
   try {
-    let cleanApiUrl = await sanitize(apiURL); // Sanitize the apiUrl just in case...   
-    let response = await fetch(cleanApiUrl);
+    let cleanApiUrl = await sanitize(apiURL); // first Sanitize the apiUrl just in case...   
+    let response = await fetch(cleanApiUrl); //fetch the response from Omeka
     let responseData = await response.json(); //turn response into json
 
     console.log(...response.headers);  //the Omeka custom response headers (such as total results) are blocked by CORS - need to add special allowances in .htaccess...need headers for total results returned
@@ -177,11 +177,13 @@ function buildHTML(){
 
 
 //some results returned via the api are contained in arrays - this is a helper to create objects from the arrays so we can reference them in printResults
-//not sure if necessary, possible remove in future
+//not sure if absolutely necessary, possible remove in future...could remove and reference the array value since this is only used for @type to determine type of item
 function arrayToObjectHelper(itemArray){
   const newObj = {};
-  itemArray.forEach(item => {
-     const [key, value] = item.split(':');
+  itemArray.forEach(function(item){
+     const keyValueArray = item.split(':');
+     const key = keyValueArray[0];
+     const value = keyValueArray[1];
      newObj[key] = value;
     });
   return newObj;
@@ -219,7 +221,6 @@ function printResults(dataBack){
           if (itemTypeArray){
             itemTypeObj = arrayToObjectHelper(itemTypeArray);
           }
-
         let itemType = itemTypeObj?.dctype;
         let bigImage = dataBack[results]?.thumbnail_display_urls.large;
         let itemID = dataBack[results]?.['o:id'];      
@@ -314,6 +315,9 @@ function displayItemSetBanner(cleanItemSetID){
       else if (cleanItemSetID==31){
         //document.getElementById("collectionHeading").innerHTML = 'Lind Collection';
         collectionBannerImage = lindBanner;
+      }
+      else {
+        collectionBannerImage = collectionBannerDefaultImage; //set default banner if item ID not found above
       }
     document.getElementById("collectionBackground").innerHTML = `<img src="${collectionBannerImage}"></img>`; 
 }
