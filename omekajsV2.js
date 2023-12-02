@@ -66,6 +66,7 @@ async function kickOff() {
     console.log(apiURL);
     getData(apiURL);  
     getItemSetData(item_set_url); //for getting the collection item-set information
+  
 }
 
 //gets and returns the starting item set ID to load in kickoff
@@ -179,7 +180,16 @@ function buildHTML(){
 //some results returned via the api are contained in arrays - this is a helper to create objects from the arrays so we can reference them in printResults
 //not sure if absolutely necessary, possible remove in future...could remove and reference the array value since this is only used for @type to determine type of item
 function arrayToObjectHelper(itemArray){
-  const newObj = {};
+  const newObj = {}; //to store the new object we are creating
+  console.log(itemArray);
+  if (Array.isArray(itemArray)){
+    console.log("hazaa it's an array");
+  }
+  else {
+    console.log("oops not an array", itemArray);
+    return itemArray; //return the value of itemArray
+  }
+  console.log(itemArray)
   itemArray.forEach(function(item){
      const keyValueArray = item.split(':');
      const key = keyValueArray[0];
@@ -188,6 +198,8 @@ function arrayToObjectHelper(itemArray){
     });
   return newObj;
 }
+
+
 
 //this grabs the key/values of each Item and Prints them to the Results div...maybe this function does too much
 function printResults(dataBack){
@@ -204,27 +216,24 @@ function printResults(dataBack){
      //if the item has a title - continue grabbing and printing the item details 
      //grab item details if the details exist using Optional Chaining - writing this here to remind myself
      if (itemTitle){            
-        let itemDescription = (dataBack[results]?.['dcterms:description']?.[0]?.['@value']);
-        //check if no item description
-        if (itemDescription==null){
-          itemDescription = "";
-        }
+        let itemDescription = (dataBack[results]?.['dcterms:description']?.[0]?.['@value']) || ""; //if no description blank text
+        
+        let itemImage = dataBack[results]?.thumbnail_display_urls.square || defaultImage; //if no image - display default global
+           
 
-        let itemImage = dataBack[results]?.thumbnail_display_urls.square;
-            //check if no Image, and sub default image if there is none
-            if (itemImage==null){
-                itemImage = defaultImage;
-            }
-
-        let itemTypeArray = dataBack[results]?.['@type'];
+        let itemTypeArray = arrayToObjectHelper(dataBack[results]?.['@type']) || undefined; //item Type can be kept in an array or object depending on what is entered in Omeka...need a check here
           //check if itemTypeArray exists before running function
-          if (itemTypeArray){
-            itemTypeObj = arrayToObjectHelper(itemTypeArray);
-          }
-        let itemType = itemTypeObj?.dctype;
+    
+        let itemType = itemTypeArray?.dctype || "No item type found";
         let bigImage = dataBack[results]?.thumbnail_display_urls.large;
         let itemID = dataBack[results]?.['o:id'];      
         let itemIdentifier = dataBack[results]?.['dcterms:identifier']?.[0]?.['@value'];
+        
+        let itemDes = arrayToObjectHelper(dataBack[results]?.['dcterms:description']) || undefined;//test
+        if (itemDes){
+          console.log(itemDes['@value']) //description test
+        }
+
         let itemPartOf = dataBack[results]?.['dcterms:isPartOf']?.[0]?.['@value'];
         let itemDate = dataBack[results]?.['dcterms:date']?.[0]?.['@value'];
         let itemSet = dataBack[results]?.['o:item_set']?.[0]?.['o:id'];
