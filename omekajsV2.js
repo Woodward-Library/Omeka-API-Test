@@ -32,7 +32,7 @@ const item_set_url = base_url + "item_sets"; //build the Omeka API URL to return
 const globalItemsPerPage = 25;  //set number of Items per page inital load
 const perPageURL = "&per_page="+globalItemsPerPage; //creating the url segment to set items per page
 const pageURL = "&page="; //specific page number to be added in pagination function
-
+const allURLParam = "all"; //set url parameter name to display all item-sets
 const errorText = 'Sorry, unable to get data.  Please try again later'; //set error text shown when unable to retrieve data from Omeka
 
 //set default item image if no item image is found
@@ -43,6 +43,8 @@ const collectionBannerDefaultImage = "https://gallery-library-20230501.sites.olt
 const chungBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/taylors_Croppedv2.jpg";
 const stereographsBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lanternSlideCropped.jpg";
 const lindBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lind_Cropped.jpg";
+const searchBannerText = "Search Results"; //banner text shown when search performed
+const allItemsBannerText = "Curated Collections"; //banner text shown when all Item-sets are viewed
 
 //Set Max Requests per Minute for rate limiting
 const maxRequestPerMinute = 5;//how many times data from Omeka can be requested per minute
@@ -75,11 +77,10 @@ async function getItemSetID(){
   let itemSetID = urlparams.searchParams.get('itemSetID'); 
   cleanedItemSetID = await sanitize(itemSetID); //sets a global variable - sanitize the itemSetID since it could be defined in URL params
   //check for no Item Set ID given in Url params
-  if (cleanedItemSetID==="") {
+  if (!cleanedItemSetID) {
     cleanedItemSetID = startingItemSetID; //if no itemSet is given in URL, display starting Item SetID
     console.log(cleanedItemSetID);
   }
-
   return cleanedItemSetID;
 }
 
@@ -131,18 +132,21 @@ async function getData(apiURL){
 async function buildApiURL (givenItemSetID){
       //check to see if there was a search value inputted, adjust the api url if exists
       let enteredSearchWords = document.getElementById("searchInput").value;
-      
+      let builtApiURL; 
       //sanitize the entered Search words
       cleanedSearchWords =  await sanitize(enteredSearchWords); 
       
       //determine if there is a search word, if not load the item set
       if (enteredSearchWords) {
-        var builtApiURL = search_url+cleanedSearchWords+perPageURL+pageURL; //build the api url with the clean search words
+        builtApiURL = search_url+cleanedSearchWords+perPageURL+pageURL; //build the api url with the clean search words
         console.log("hello there is a search word");
         console.log(builtApiURL);
       }
+      else if (givenItemSetID===allURLParam){
+        builtApiURL = item_set_url; //display item-set collections if parameter is 'all'
+      }
       else {
-        var builtApiURL = item_url+givenItemSetID+perPageURL+pageURL;
+        builtApiURL = item_url+givenItemSetID+perPageURL+pageURL;
         console.log(builtApiURL);
       }
   return (builtApiURL);
@@ -199,7 +203,58 @@ function arrayToObjectHelper(itemArray){
   return newObj;
 }
 
+//
+function printResultsItemHTML(singleItemData){
+  console.log(singleItemData);
+  let itemDescription = (singleItemData?.['dcterms:description']?.[0]?.['@value']) || ""; //if no description blank text
+  let itemImage = singleItemData?.thumbnail_display_urls.square || defaultImage; //if no image - display default global
+  let itemTitle = singleItemData?.['o:title'];
+  let itemTypeObject = arrayToObjectHelper(singleItemData?.['@type']) || undefined; //item Type can be kept in an array or object depending on what is entered in Omeka...check in helper function
+  //check if itemTypeArray exists before running function
+  console.log(itemTitle);
 
+  let itemType = itemTypeObject?.dctype || "Item type not set";
+  let bigImage = singleItemData?.thumbnail_display_urls.large;
+  let itemID = singleItemData?.['o:id'];      
+  let itemIdentifier = singleItemData?.['dcterms:identifier']?.[0]?.['@value'];
+  let itemPartOf = singleItemData?.['dcterms:isPartOf']?.[0]?.['@value'];
+  let itemDate = singleItemData?.['dcterms:date']?.[0]?.['@value'];
+  let itemSet = singleItemData?.['o:item_set']?.[0]?.['o:id'];
+  let itemSetFooter; //var for holding the single item footer
+  let setBaseURL = window.location.origin + window.location.pathname;
+
+  //customize single item footer for ALL item-set display, and define footer for rest of item-set display
+  if (cleanedItemSetID===allURLParam){
+    itemSetFooter = `<a href="${setBaseURL}?itemSetID=${itemID}">View Collection</a><br> `
+  }
+  else {
+    itemSetFooter = `
+    <a href="${itemPlayerURL}${itemID}&title=${itemTitle}">Open in item viewer</a><br>
+    <a href="${bigImage}">View larger image</a>
+    `
+  } 
+
+  //print the Item to the page
+  document.getElementById("results").innerHTML+=`
+    <div class="singleResult">
+      <div class="resultImage">
+        <a href="${bigImage}"><img src="${itemImage}" alt="${itemTitle}"></a>
+      </div>
+      <div class="resultInfo" id="resultInfo">
+        <h2>${itemTitle}</h2>
+        <p class="itemType">Identifier: ${itemIdentifier} 
+          <br>Type: ${itemType} <br>
+          <!--Part of: ${itemPartOf} <br>-->
+          Date: ${itemDate} <br>
+          <!--Related Item Set: ${itemSet}-->
+        </p>
+        <p>${itemDescription}</p>
+        <p>${itemSetFooter}</p>
+      </div>
+    </div>
+  `//end of html block
+         
+}
 
 //this grabs the key/values of each Item and Prints them to the Results div...maybe this function does too much
 function printResults(dataBack){
@@ -211,54 +266,19 @@ function printResults(dataBack){
   for (var results=0; results<globalItemsPerPage; results++){
     console.log(results); 
     let itemTitle = dataBack[results]?.['o:title'];
-     console.log(itemTitle);
+     
       
      //if the item has a title - continue grabbing and printing the item details 
      //grab item details if the details exist using Optional Chaining - writing this here to remind myself
-     if (itemTitle){            
-        let itemDescription = (dataBack[results]?.['dcterms:description']?.[0]?.['@value']) || ""; //if no description blank text
-        
-        let itemImage = dataBack[results]?.thumbnail_display_urls.square || defaultImage; //if no image - display default global
-           
-
-        let itemTypeArray = arrayToObjectHelper(dataBack[results]?.['@type']) || undefined; //item Type can be kept in an array or object depending on what is entered in Omeka...need a check here
-          //check if itemTypeArray exists before running function
-    
-        let itemType = itemTypeArray?.dctype || "No item type found";
-        let bigImage = dataBack[results]?.thumbnail_display_urls.large;
-        let itemID = dataBack[results]?.['o:id'];      
-        let itemIdentifier = dataBack[results]?.['dcterms:identifier']?.[0]?.['@value'];
-        
-        let itemDes = arrayToObjectHelper(dataBack[results]?.['dcterms:description']) || undefined;//test
-        if (itemDes){
-          console.log(itemDes['@value']) //description test
+     if (itemTitle){    
+        if (cleanedItemSetID===allURLParam){
+          console.log("hey this is the ALL collection");
+          printResultsItemHTML(dataBack[results]);
+          //print collection-style HTML
+        }        
+        else {
+          printResultsItemHTML(dataBack[results]);
         }
-
-        let itemPartOf = dataBack[results]?.['dcterms:isPartOf']?.[0]?.['@value'];
-        let itemDate = dataBack[results]?.['dcterms:date']?.[0]?.['@value'];
-        let itemSet = dataBack[results]?.['o:item_set']?.[0]?.['o:id'];
-        
-        //print the Item to the page
-        document.getElementById("results").innerHTML+=`
-          <div class="singleResult">
-            <div class="resultImage">
-              <a href="${bigImage}"><img src="${itemImage}" alt="${itemTitle}"></a>
-            </div>
-            <div class="resultInfo">
-              <h2>${itemTitle}</h2>
-                <p class="itemType">Identifier: ${itemIdentifier} <br>Type: ${itemType} <br>
-                <!--Part of: ${itemPartOf} <br>-->
-                Date: ${itemDate} <br>
-                <!--Related Item Set: ${itemSet}-->
-      
-                </p>
-              <p>${itemDescription}</p>
-              <p><a href="${itemPlayerURL}${itemID}&title=${itemTitle}">Open in item viewer</a><br>
-              <a href="${bigImage}">View larger image</a></p>
-            </div>
-          </div>
-
-          `//end of html block
           
     
     }//end of if has title
@@ -386,9 +406,10 @@ async function getItemSetData(apiURL){
 function printNav (theItemSetData){
 
   //add the collection dropdown 
-  document.getElementById("collectionNav").innerHTML +=`
+  document.getElementById("collectionNav").innerHTML =`
   <select name="collection" id="collectionSelect" aria-label="Select a Collection">
   <option value="${startingItemSetID}" disabled selected >Select Collection</option>
+  <option value="${allURLParam}">-- View all --</option>
   </select>
   <button onclick="collectionPicked()" id="collectionButton">Go</button>
   `
@@ -423,13 +444,17 @@ function printCurrentCollectionBanner(itemSetData){
     
     console.log("printcurrentcollban itemsetID",cleanedItemSetID);
     if (cleanedItemSetID==="search"){
-        document.getElementById("collectionHeading").innerHTML = `Search Results`;
+      document.getElementById("collectionHeading").innerHTML = `${searchBannerText}`;
     }
-    else{
+    else if (cleanedItemSetID===allURLParam){
+      document.getElementById("collectionHeading").innerHTML = `${allItemsBannerText}`;
+    }
+    //determine which title should be shown based on item-set
+    else {
       //retrieve array of currently chosen collection
-      let convertedItemSetID = parseInt(cleanedItemSetID);
-      let result = itemSetData.find(item => item['o:id'] === convertedItemSetID);   
-      let foundTitle = result['o:title'];
+      let convertedItemSetID = parseInt(cleanedItemSetID) || 0; //convert the clean ID to an integer or assign it 0
+      let result = itemSetData.find(item => item['o:id'] === convertedItemSetID) || {"o:title":""}; //find the title for the matching ID, if none set blank text
+      let foundTitle = result['o:title'] || ""; //if not title found display blank string
       
       //print the current banner to the banner div
       document.getElementById("collectionHeading").innerHTML = `${foundTitle}`;
