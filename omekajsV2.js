@@ -20,7 +20,7 @@
  * 
  ********************************************************************/
 
-const startingItemSetID = "11"; //set starting Item Set ID to display on load if none given
+const startingItemSetID = "all"; //set starting Item Set ID to display on load if none given in URL params - set to "all" if you'd like to display all available item-sets 
 let cleanedItemSetID; //to hold the itemSetID after sanitization
 
 const base_url="https://omeka-dev.library.ubc.ca/api/"; //the Omeka Base API URL + item set id holder
