@@ -213,7 +213,7 @@ function printResultsItemHTML(singleItemData){
   //check if itemTypeArray exists before running function
   console.log(itemTitle);
 
-  let itemType = itemTypeObject?.dctype || "Item type not set";
+  let itemType = itemTypeObject?.dctype || singleItemData?.['@type'] || "Item type not set";
   let bigImage = singleItemData?.thumbnail_display_urls.large;
   let itemID = singleItemData?.['o:id'];      
   let itemIdentifier = singleItemData?.['dcterms:identifier']?.[0]?.['@value'];
@@ -409,7 +409,7 @@ function printNav (theItemSetData){
   document.getElementById("collectionNav").innerHTML =`
   <select name="collection" id="collectionSelect" aria-label="Select a Collection">
   <option value="${startingItemSetID}" disabled selected >Select Collection</option>
-  <option value="${allURLParam}">-- View all --</option>
+  <option value="${allURLParam}">--- View All Collections ---</option>
   </select>
   <button onclick="collectionPicked()" id="collectionButton">Go</button>
   `
