@@ -19,106 +19,105 @@
 <!--This script is embedded into the viewer page-->
 <script>
 
-    /* get url params */
-    
-    urlparams = new URL(window.location.toLocaleString());
-    console.log(urlparams);
-    baseURL = "https://omeka-dev.library.ubc.ca/iiif-presentation/3/"
-    itemID = urlparams.searchParams.get('itemID');
-    itemSetID = urlparams.searchParams.get('itemSetID');
-    
-    
-    if (itemSetID){
-       manifesturl = baseURL + "item-set/" + itemSetID + "/collection";
-    }
-    else if (itemID) {
-        manifesturl = baseURL + "item/" + itemID + "/manifest";
-    }
-    //no params set then set default view
-    else {
-        manifesturl="https://omeka-dev.library.ubc.ca/iiif-presentation/3/item-set/534/collection"
-    }
-    
-    
-    
-    
-    
-    const data = {
-      manifest: manifesturl,
+  /* Get the URL params */
+
+let urlparams = new URL(window.location.toLocaleString());
+console.log(urlparams);
+const baseURL = "https://omeka.library.ubc.ca/iiif-presentation/3/"
+const itemID = urlparams.searchParams.get('itemID');
+const itemSetID = urlparams.searchParams.get('itemSetID');
+let manifesturl;
+
+if (itemSetID){
+    manifesturl = baseURL + "item-set/" + itemSetID + "/collection";
+}
+
+else if (itemID) {
+    manifesturl = baseURL + "item/" + itemID + "/manifest";
+}
+
+//no params set then set default view
+else {
+    manifesturl="https://omeka.library.ubc.ca/iiif-presentation/3/item-set/11/collection"
+}
+
+
+const data = {
+  manifest: manifesturl,
+  embedded: true // needed for codesandbox frame
+};
+
+uv = UV.init("uv", data);
+
+// override config using an inline json object
+uv.on("configure", function ({ config, cb }) {
+  cb({
+    options: { 
+      footerPanelEnabled: true,
+      rightPanelEnabled: true,
+      useArrowKeysToNavigate: true,
+      pagingEnabled: false,
+      pagingOptionEnabled: false
+    },
+    modules:
+    {
       
-    };
-    
-    uv = UV.init("uv", data);
-    
-    // override config using an inline json object
-    uv.on("configure", function ({ config, cb }) {
-      cb({
-        options: { 
-          footerPanelEnabled: true,
-          rightPanelEnabled: true,
-          useArrowKeysToNavigate: true,
-          pagingEnabled: false,
-          pagingOptionEnabled: false
-        },
-        modules:
-        {
-          
-          openSeadragonCenterPanel:{
-            options:{
-              animationTime: 0.15,
-              autoHideControls: false,
-              requiredStatementEnabled: false,
-              blendTime: 1,
-              constrainDuringPan: false,
-              controlsFadeAfterInactive: 1500,
-              controlsFadeDelay: 250,
-              controlsFadeLength: 250,
-              defaultZoomLevel: 0,
-              immediateRender: false,
-              maxZoomPixelRatio: 1.25,
-              navigatorPosition: "TOP_RIGHT",
-              pageGap: 50,
-              showHomeControl: true,
-              trimAttributionCount: 1,
-              visibilityRatio: 0.5
-            }
-          },
-          contentLeftPanel:{
-            options:{
-               panelOpen: true,
-               pageModeEnabled: true,
-               thumbsEnabled: true,
-               branchNodesSelectable: true,
-               panelExpandedWidth: 250
-            }
-          },
-          settingsDialogue:{
-            content:{
-              pagingEnabled: "Two Page View"
-            }
-          },
-          pagingHeaderPanel: {
-            options: {
-              galleryButtonEnabled: true,
-              imageSelectionBoxEnabled: true,
-              pageModeEnabled: false,
-              pagingToggleEnabled: true
-          
-            }
-          },
-          footerPanel: {
-            options:{
-              shareEnabled: false,
-              printEnabled: false,
-              downloadEnabled: false
-            }
-        
-          }
-          
-          
+      openSeadragonCenterPanel:{
+        options:{
+          animationTime: 0.15,
+          autoHideControls: false,
+          requiredStatementEnabled: false,
+          blendTime: 1,
+          constrainDuringPan: false,
+          controlsFadeAfterInactive: 1500,
+          controlsFadeDelay: 250,
+          controlsFadeLength: 250,
+          defaultZoomLevel: 0,
+          immediateRender: false,
+          maxZoomPixelRatio: 1.25,
+          navigatorPosition: "TOP_RIGHT",
+          pageGap: 50,
+          showHomeControl: true,
+          trimAttributionCount: 1,
+          visibilityRatio: 0.5
         }
-      });
-    });
+      },
+      contentLeftPanel:{
+        options:{
+           panelOpen: true,
+           pageModeEnabled: true,
+           thumbsEnabled: true,
+           branchNodesSelectable: true,
+           panelExpandedWidth: 200
+        }
+      },
+      settingsDialogue:{
+        content:{
+          pagingEnabled: "Two Page View"
+        }
+      },
+      pagingHeaderPanel: {
+        options: {
+          galleryButtonEnabled: true,
+          imageSelectionBoxEnabled: true,
+          pageModeEnabled: false,
+          pagingToggleEnabled: true
+      
+        }
+      },
+      footerPanel: {
+        options:{
+          shareEnabled: false,
+          printEnabled: false,
+          downloadEnabled: false
+        }
+    
+      }
+      
+      
+    }
+  });
+});
     
     </script>
 </html>
