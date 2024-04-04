@@ -44,7 +44,7 @@ const chungBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/202
 const stereographsBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lanternSlideCropped.jpg";
 const lindBanner = "https://gallery-library-20230501.sites.olt.ubc.ca/files/2023/11/lind_Cropped.jpg";
 const searchBannerText = "Search Results"; //banner text shown when search performed
-const allItemsBannerText = "Curated Collections"; //banner text shown when all Item-sets are viewed
+const allItemsBannerText = "All Collections"; //banner text shown when all Item-sets are viewed
 
 //Set Max Requests per Minute for rate limiting
 const maxRequestPerMinute = 5;//how many times data from Omeka can be requested per minute
