@@ -230,7 +230,6 @@ function printResultsItemHTML(singleItemData){
   else {
     itemSetFooter = `
     <a href="${itemPlayerURL}${itemID}&title=${itemTitle}">Open in item viewer</a><br>
-    <a href="${bigImage}">View larger image</a>
     `
   } 
 
