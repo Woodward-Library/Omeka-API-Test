@@ -20,7 +20,7 @@
  * 
  ********************************************************************/
 
-const startingItemSetID = "all"; //set starting Item Set ID to display on load if none given in URL params - set to "all" if you'd like to display all available item-sets 
+const startingItemSetID = "11"; //set starting Item Set ID to display on load if none given
 let cleanedItemSetID; //to hold the itemSetID after sanitization
 
 const base_url="https://omeka-dev.library.ubc.ca/api/"; //the Omeka Base API URL + item set id holder
@@ -47,7 +47,7 @@ const searchBannerText = "Search Results"; //banner text shown when search perfo
 const allItemsBannerText = "All Collections"; //banner text shown when all Item-sets are viewed
 
 //Set Max Requests per Minute for rate limiting
-const maxRequestPerMinute = 5;//how many times data from Omeka can be requested per minute
+const maxRequestPerMinute = 60;//how many times data from Omeka can be requested per minute
 
 
 /********************************************************************
@@ -65,7 +65,7 @@ async function kickOff() {
     buildHTML(); //build the HTML containers for Omeka items and results
     displayItemSetBanner(cleanItemSetID); //temporary - will be removed when future function printCurrentCollectionBanner is completed
     let apiURL = await buildApiURL(cleanItemSetID); //create the API url for the starting item set
-    console.log(apiURL);
+    //console.log(apiURL);
     getData(apiURL);  
     getItemSetData(item_set_url); //for getting the collection item-set information
   
@@ -79,7 +79,7 @@ async function getItemSetID(){
   //check for no Item Set ID given in Url params
   if (!cleanedItemSetID) {
     cleanedItemSetID = startingItemSetID; //if no itemSet is given in URL, display starting Item SetID
-    console.log(cleanedItemSetID);
+    //console.log(cleanedItemSetID);
   }
   return cleanedItemSetID;
 }
@@ -113,11 +113,11 @@ async function getData(apiURL){
     let response = await fetch(cleanApiUrl); //fetch the response from Omeka
     let responseData = await response.json(); //turn response into json
 
-    console.log(...response.headers);  //the Omeka custom response headers (such as total results) are blocked by CORS - need to add special allowances in .htaccess...need headers for total results returned
+    //console.log(...response.headers);  //the Omeka custom response headers (such as total results) are blocked by CORS - need to add special allowances in .htaccess...need headers for total results returned
     const itemCount = response.headers.get('omeka-s-total-results'); //get the total results - we need this for pagination later
-    console.log(itemCount);
+    //console.log(itemCount);
   
-    console.log(responseData); //just to check the data
+    //console.log(responseData); //just to check the data
     printResults(responseData); //print the results to the page
     printPagination(itemCount, cleanApiUrl); //determine and print the pagination
   } 
@@ -139,15 +139,12 @@ async function buildApiURL (givenItemSetID){
       //determine if there is a search word, if not load the item set
       if (enteredSearchWords) {
         builtApiURL = search_url+cleanedSearchWords+perPageURL+pageURL; //build the api url with the clean search words
-        console.log("hello there is a search word");
-        console.log(builtApiURL);
       }
       else if (givenItemSetID===allURLParam){
         builtApiURL = item_set_url; //display item-set collections if parameter is 'all'
       }
       else {
         builtApiURL = item_url+givenItemSetID+perPageURL+pageURL;
-        console.log(builtApiURL);
       }
   return (builtApiURL);
 }
@@ -185,15 +182,15 @@ function buildHTML(){
 //not sure if absolutely necessary, possible remove in future...could remove and reference the array value since this is only used for @type to determine type of item
 function arrayToObjectHelper(itemArray){
   const newObj = {}; //to store the new object we are creating
-  console.log(itemArray);
+
   if (Array.isArray(itemArray)){
-    console.log("hazaa it's an array");
+    //console.log("hazaa it's an array");
   }
   else {
-    console.log("oops not an array", itemArray);
+    //console.log("oops not an array", itemArray);
     return itemArray; //return the value of itemArray
   }
-  console.log(itemArray)
+  //console.log(itemArray)
   itemArray.forEach(function(item){
      const keyValueArray = item.split(':');
      const key = keyValueArray[0];
@@ -205,15 +202,15 @@ function arrayToObjectHelper(itemArray){
 
 //
 function printResultsItemHTML(singleItemData){
-  console.log(singleItemData);
+  //console.log(singleItemData);
   let itemDescription = (singleItemData?.['dcterms:description']?.[0]?.['@value']) || ""; //if no description blank text
   let itemImage = singleItemData?.thumbnail_display_urls.square || defaultImage; //if no image - display default global
   let itemTitle = singleItemData?.['o:title'];
   let itemTypeObject = arrayToObjectHelper(singleItemData?.['@type']) || undefined; //item Type can be kept in an array or object depending on what is entered in Omeka...check in helper function
   //check if itemTypeArray exists before running function
-  console.log(itemTitle);
+  //console.log(itemTitle);
 
-  let itemType = itemTypeObject?.dctype || singleItemData?.['@type'] || "Item type not set";
+  let itemType = itemTypeObject?.dctype || "Item type not set";
   let bigImage = singleItemData?.thumbnail_display_urls.large;
   let itemID = singleItemData?.['o:id'];      
   let itemIdentifier = singleItemData?.['dcterms:identifier']?.[0]?.['@value'];
@@ -225,11 +222,11 @@ function printResultsItemHTML(singleItemData){
 
   //customize single item footer for ALL item-set display, and define footer for rest of item-set display
   if (cleanedItemSetID===allURLParam){
-    itemSetFooter = `<a href="${setBaseURL}?itemSetID=${itemID}">View Collection</a><br> `
+    itemSetFooter = `<a class="itemFooter" href="${setBaseURL}?itemSetID=${itemID}">View Collection</a><br> `
   }
   else {
     itemSetFooter = `
-    <a href="${itemPlayerURL}${itemID}&title=${itemTitle}">Open in item viewer</a><br>
+    <a class="itemFooter" href="${itemPlayerURL}${itemID}&title=${itemTitle}">Open in item viewer</a><br>
     `
   } 
 
@@ -263,7 +260,7 @@ function printResults(dataBack){
 
   //start defining each item and print to page
   for (var results=0; results<globalItemsPerPage; results++){
-    console.log(results); 
+    //console.log(results); 
     let itemTitle = dataBack[results]?.['o:title'];
      
       
@@ -271,7 +268,7 @@ function printResults(dataBack){
      //grab item details if the details exist using Optional Chaining - writing this here to remind myself
      if (itemTitle){    
         if (cleanedItemSetID===allURLParam){
-          console.log("hey this is the ALL collection");
+          //console.log("hey this is the ALL collection");
           printResultsItemHTML(dataBack[results]);
           //print collection-style HTML
         }        
@@ -298,8 +295,8 @@ function printPagination(numberOfResults, builtURL){
   //fix to 'sanitize' builtapi url to remove any page numbers passed when this loops more than once
   let findURLEnd = "&page=";
   let cleanBuiltURL = builtURL.slice(0,builtURL.lastIndexOf(findURLEnd))+"&page="; 
-  console.log(builtURL);
-  console.log(cleanBuiltURL);
+  //console.log(builtURL);
+  //console.log(cleanBuiltURL);
 
   //clear out any existing page numbers
   document.getElementById("pagination").innerHTML=``;
@@ -310,7 +307,7 @@ function printPagination(numberOfResults, builtURL){
     
     //print page numbers v2
     for (pageCount=1; pageCount< (numberOfPages+1); pageCount++){
-      console.log(builtURL);
+      //console.log(builtURL);
       document.getElementById("pagination").innerHTML+=`
         <div class="pageNumber" onclick="getData('${cleanBuiltURL}${pageCount}')"> ${pageCount} </div>
         
@@ -385,7 +382,7 @@ printNav: prints the Item-set navigation for Chung, Lind and Stereographs using 
 //gets the item-set data from Omeka - needed to get collection (item-set) titles and IDS to print the navigation and banner
 async function getItemSetData(apiURL){
   cleanApiUrl = await sanitize(apiURL);//sanitize apiUrl just in case...
-  console.log("clean api url from getItemSetData",cleanApiUrl)
+  //console.log("clean api url from getItemSetData",cleanApiUrl)
     let response = await fetch(cleanApiUrl)
       .then(response => {
         return response.json();
@@ -395,7 +392,7 @@ async function getItemSetData(apiURL){
         document.getElementById("errorContainer").innerHTML = `Sorry, unable to get Item-Set data.  Please try again later`
       });  
     itemSetData = response;
-    console.log(itemSetData); //just to check the data 
+    //console.log(itemSetData); //just to check the data 
     printNav(response);
     printCurrentCollectionBanner(response);
     return(itemSetData);
@@ -408,7 +405,7 @@ function printNav (theItemSetData){
   document.getElementById("collectionNav").innerHTML =`
   <select name="collection" id="collectionSelect" aria-label="Select a Collection">
   <option value="${startingItemSetID}" disabled selected >Select Collection</option>
-  <option value="${allURLParam}">--- View All Collections ---</option>
+  <option value="${allURLParam}">-- View all --</option>
   </select>
   <button onclick="collectionPicked()" id="collectionButton">Go</button>
   `
@@ -420,7 +417,7 @@ function printNav (theItemSetData){
     let itemSetImageURL = theItemSetData[results]?.thumbnail_display_urls?.large;
     let itemSetCollectionID = theItemSetData[results]?.['o:id'];
 
-    console.log(itemSetImageURL);
+    //console.log(itemSetImageURL);
     document.getElementById("collectionSelect").innerHTML +=`   
       <option value=${itemSetCollectionID}>
       ${itemSetTitle}
@@ -441,7 +438,7 @@ function collectionPicked(){
 function printCurrentCollectionBanner(itemSetData){
     //check if Search was performed - if so display search banner
     
-    console.log("printcurrentcollban itemsetID",cleanedItemSetID);
+    //console.log("printcurrentcollban itemsetID",cleanedItemSetID);
     if (cleanedItemSetID==="search"){
       document.getElementById("collectionHeading").innerHTML = `${searchBannerText}`;
     }
@@ -467,20 +464,19 @@ function checkLimit(){
   const storedLastTime = parseInt(sessionStorage.getItem("lastRequestedTime")) || 0; //get the stored last recorded time or set it to 0 initially
   let currentIteration = parseInt(sessionStorage.getItem("storedCounter")) || 0; //get the current iteration or set it to 0 initially
 
-  console.log(currentTime - storedLastTime);
-  console.log(storedLastTime);
+  //console.log(currentTime - storedLastTime);
+  //console.log(storedLastTime);
 
   // Reset the counter, Session Storage and update the timestamp IF elapsed time has been over a minute - OR this if first run currentTIme will always be greater than a minute in value
   if (currentTime - storedLastTime >= a_Minute) {
     
-    console.log("hey it's been a minute")
     
     sessionStorage.setItem("storedCounter","1"); //set sessionStorage
-    console.log("session storage value of the stored counter has been reset to:",sessionStorage.getItem("storedCounter"));
-    console.log("current time is", currentTime);
+    //console.log("session storage value of the stored counter has been reset to:",sessionStorage.getItem("storedCounter"));
+    //console.log("current time is", currentTime);
     
     sessionStorage.setItem("lastRequestedTime",currentTime);
-    console.log("last requested time is now:",sessionStorage.getItem('lastRequestedTime'));
+    //console.log("last requested time is now:",sessionStorage.getItem('lastRequestedTime'));
 
     hideErrorMessage(); //removes the error rate limit message to user
 
@@ -491,12 +487,12 @@ function checkLimit(){
     //theCurrentIteration = parseInt(currentIteration);
     currentIteration++;
     sessionStorage.setItem("storedCounter",currentIteration);
-    console.log(currentIteration);
+    //console.log(currentIteration);
   }
 
   // Check if the number of requests exceeds the limit in a minute
   if (currentIteration >= maxRequestPerMinute && currentTime - storedLastTime < a_Minute) {
-    console.log('Rate limit exceeded...time out for 1 minute');
+   // console.log('Rate limit exceeded...time out for 1 minute');
     showErrorMessage("Rate limit exceeded. Please wait before making more requests.");
     return false;
   }
@@ -507,8 +503,3 @@ function checkLimit(){
 
 //the start of everything
 kickOff();  
-
-
-
-
-
