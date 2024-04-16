@@ -203,6 +203,7 @@ function arrayToObjectHelper(itemArray){
 //
 function printResultsItemHTML(singleItemData){
   //console.log(singleItemData);
+  //grab item details if the details exist using Optional Chaining - writing this here to remind myself
   let itemDescription = (singleItemData?.['dcterms:description']?.[0]?.['@value']) || ""; //if no description blank text
   let itemImage = singleItemData?.thumbnail_display_urls.square || defaultImage; //if no image - display default global
   let itemTitle = singleItemData?.['o:title'];
@@ -252,20 +253,28 @@ function printResultsItemHTML(singleItemData){
          
 }
 
-//this grabs the key/values of each Item and Prints them to the Results div...maybe this function does too much
+//this loops through the key/values of each Item and sends them to printResultsItemHTML to print them to the Results div - function is a misnomer now...maybe sortItems?  or sortResults?
 function printResults(dataBack){
 
+  console.log(dataBack.length);
+  
   //clear any existing items in the results area
   document.getElementById("results").innerHTML=``;
 
+  
+  //check for Search results - if no items returned display this message
+  if (dataBack.length == 0){
+    document.getElementById("results").innerHTML=`
+      <div id="noResults">Sorry, no results found</div>
+    `;
+  }
+  
   //start defining each item and print to page
-  for (var results=0; results<globalItemsPerPage; results++){
-    //console.log(results); 
+  for (var results=0; results<globalItemsPerPage; results++){    
     let itemTitle = dataBack[results]?.['o:title'];
-     
       
      //if the item has a title - continue grabbing and printing the item details 
-     //grab item details if the details exist using Optional Chaining - writing this here to remind myself
+
      if (itemTitle){    
         if (cleanedItemSetID===allURLParam){
           //console.log("hey this is the ALL collection");
