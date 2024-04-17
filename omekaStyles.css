@@ -19,6 +19,11 @@
   padding:10px;
 }
 
+.resultInfo h2{
+  font-size: 1.8em;
+  line-height: 1.2em;
+}
+
 #pagination {
   text-align : center;
 }
