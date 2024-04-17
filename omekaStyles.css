@@ -11,8 +11,8 @@
   padding:20px;
 }
 
-.resultImage img{
-  max-width: 200px;
+.resultImage img {
+    max-width: fit-content;
 }
 
 .resultInfo p{
@@ -63,13 +63,18 @@ div#collectionNav {
 
 input#searchInput {
     height: 32px;
+    border-radius: 3px;
+    border: 1px;
     
 }
 
 button#submitSearch {
-    height: 32px;
+    height: 34px;
     margin-left: 5px;
-    margin-top:0px;
+    margin-top: 0px;
+    border-radius: 3px;
+    border: 1px;
+    padding: 0px 15px;
 }
 
 button#collectionButton {
@@ -108,6 +113,7 @@ cursor: pointer;
 .resultInfo>h2 {
 padding-top:0px;
 padding-left:11px;
+margin-top: 0px;
 }
 
 div.pageNumber{
@@ -129,6 +135,7 @@ font-weight: 600;
   position: relative;
   height: 200px;
   display: flex;
+  background-color: #000;
 }
 
 #collectionBackground img {
